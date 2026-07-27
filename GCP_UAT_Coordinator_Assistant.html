@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP UAT Coordinator Assistant</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh;padding:2rem 1rem}
+  .container{max-width:780px;margin:0 auto}
+  .hdr{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .hdr h1{font-size:20px;font-weight:600;color:#1a1a1a}
+  .badge{background:#e8f0fe;color:#1a56db;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+  .sub{font-size:13px;color:#555;margin-bottom:1.5rem;line-height:1.6}
+  .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+  .lbl{font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .lbl svg{flex-shrink:0}
+  .opt-tag{font-size:11px;color:#999;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:20px;padding:2px 8px;font-weight:400;text-transform:none;letter-spacing:0}
+  .desc{font-size:13px;color:#555;line-height:1.6}
+  .field-lbl{font-size:12px;color:#555;margin-top:10px;display:block;font-weight:500}
+  textarea,input[type=text],input[type=date]{width:100%;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#fafafa;line-height:1.6;margin-top:6px;transition:border-color .15s}
+  textarea{resize:vertical}
+  textarea:focus,input:focus{outline:none;border-color:#1a56db;background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  hr{border:none;border-top:1px solid #e5e5e5;margin:1.5rem 0}
+  .upload-zone{border:1.5px dashed #ccc;border-radius:8px;padding:20px;text-align:center;margin-top:10px;cursor:pointer;transition:all .15s;background:#fafafa}
+  .upload-zone:hover{background:#f0f4ff;border-color:#1a56db}
+  .upload-zone .icon{font-size:28px;margin-bottom:6px}
+  .upload-zone p{font-size:13px;color:#555}
+  .upload-zone small{font-size:11px;color:#999}
+  .file-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+  .file-item{display:flex;align-items:center;justify-content:space-between;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:8px 12px}
+  .file-left{display:flex;align-items:center;gap:8px;font-size:13px;color:#1a1a1a;word-break:break-all}
+  .file-rm{background:none;border:none;cursor:pointer;color:#999;font-size:18px;padding:0 2px;line-height:1}
+  .file-rm:hover{color:#e53e3e}
+  .tip-info{background:#e8f0fe;border:1px solid #c3d3fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#1a56db;margin-top:10px;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+  .tip-success{background:#e6f4ea;border:1px solid #b7dfbf;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e6e31;margin-top:1rem;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+  .tip-warn{background:#fff8e6;border:1px solid #fcd77a;border-radius:8px;padding:10px 14px;font-size:12px;color:#7a4f00;margin-top:.75rem;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+  .gh-box{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;font-size:12px;color:#555;margin-top:10px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+  .email-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:1rem}
+  .ebtn{border:1px solid #ccc;background:#fff;border-radius:10px;padding:16px 10px;cursor:pointer;text-align:center;transition:all .15s;width:100%}
+  .ebtn:hover{background:#f0f4ff;border-color:#1a56db}
+  .ebtn .eicon{font-size:22px;margin-bottom:6px}
+  .ebtn .et{font-size:12px;font-weight:600;color:#1a1a1a}
+  .ebtn .es{font-size:11px;color:#888;margin-top:3px}
+  .section-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:.75rem}
+  .output-area{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1.5rem;margin-top:1.5rem;display:none}
+  .output-area.visible{display:block}
+  .output-tabs{display:flex;gap:8px;margin-bottom:1rem;border-bottom:1px solid #e5e5e5;padding-bottom:0}
+  .tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:#1a56db;border-bottom-color:#1a56db}
+  .tab-content{display:none;font-size:13px;line-height:1.8;color:#1a1a1a}
+  .tab-content.active{display:block}
+  .tab-content pre{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;font-size:12px;white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;overflow-x:auto}
+  .outlook-btn{display:inline-flex;align-items:center;gap:8px;background:#0072c6;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-top:1rem;transition:background .15s}
+  .outlook-btn:hover{background:#005fa3}
+  .checklist{background:#fff8e6;border:1px solid #fcd77a;border-radius:8px;padding:1rem;margin-top:1rem}
+  .checklist p{font-size:12px;font-weight:600;color:#7a4f00;margin-bottom:8px}
+  .checklist ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .checklist li{display:flex;align-items:center;gap:8px;font-size:12px;color:#555}
+  .checklist li input[type=checkbox]{width:15px;height:15px;accent-color:#1a56db;flex-shrink:0}
+  .risk-box{background:#fff0f0;border:1px solid #fcc;border-radius:8px;padding:1rem;margin-top:1rem;font-size:12px;color:#c0392b;line-height:1.6}
+  .risk-box strong{display:block;margin-bottom:4px;font-size:13px}
+  .spinner{display:none;text-align:center;padding:2rem;color:#888;font-size:13px}
+  .spinner.visible{display:block}
+  .loading-dots::after{content:'...';animation:dots 1.2s steps(4,end) infinite}
+  @keyframes dots{0%,100%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  code{font-size:12px;background:#f0f0f0;padding:1px 5px;border-radius:4px;font-family:'Courier New',monospace}
+  @media(max-width:600px){.row2{grid-template-columns:1fr}.email-btns{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hdr">
+    <span style="font-size:24px">📋</span>
+    <h1>GCP UAT Coordinator</h1>
+    <span class="badge">v1.0</span>
+  </div>
+  <p class="sub">Fill in sprint details → upload attachments → pick which email to generate. Opens pre-filled in Outlook.</p>
+
+  <!-- Sprint Info -->
+  <div class="card">
+    <div class="lbl">🏁 Sprint info</div>
+    <input type="text" id="release" placeholder="Sprint / Release name  e.g. SPrint R26.15">
+    <div class="row2">
+      <div><span class="field-lbl">UAT start date</span><input type="date" id="start"></div>
+      <div><span class="field-lbl">UAT end date</span><input type="date" id="end"></div>
+    </div>
+  </div>
+
+  <!-- Recipients -->
+  <div class="card">
+    <div class="lbl">👥 Recipients</div>
+    <span class="field-lbl">To (semicolon separated)</span>
+    <input type="text" id="to" placeholder="business.user@company.com; another@company.com">
+    <span class="field-lbl">CC (semicolon separated)</span>
+    <input type="text" id="cc" placeholder="qa@company.com; ba@company.com; dev@company.com">
+    <span class="field-lbl">Support contacts (shown in email body)</span>
+    <input type="text" id="contacts" placeholder="QA: Jane D | BA: John S | Dev Lead: Alex T">
+  </div>
+
+  <!-- Attachments -->
+  <div class="card">
+    <div class="lbl">📎 Attachments</div>
+    <p class="desc">Upload files — names appear in the email body as your attach-before-send checklist.</p>
+    <div class="upload-zone" onclick="document.getElementById('file-inp').click()">
+      <div class="icon">⬆️</div>
+      <p>Click to upload files</p>
+      <small>Requirement docs · UAT Tracker · Login Instructions · Test Data Sheet</small>
+    </div>
+    <input type="file" id="file-inp" multiple style="display:none" onchange="handleFiles(this.files)">
+    <div class="file-list" id="file-list"></div>
+    <div class="tip-info">
+      ℹ️ <span>Outlook mailto links cannot auto-attach files (browser security limit). File names are listed in the email body as a reminder to attach manually before sending.</span>
+    </div>
+  </div>
+
+  <!-- User Stories -->
+  <div class="card">
+    <div class="lbl">📄 User stories / CR documents <span class="opt-tag">mandatory</span></div>
+    <p class="desc">Paste all US/CR content for this sprint — IDs, titles, requirements, acceptance criteria.</p>
+    <textarea id="us" rows="7" placeholder="ID&#9;Title&#9;Assigned To&#10;2110105&#9;Non CR: Dynamic config ATCI offshore workflow...&#10;2110144&#9;CR: Extension of ~MPSDate~ placeholder..."></textarea>
+  </div>
+
+  <!-- Login -->
+  <div class="card">
+    <div class="lbl">🔐 Login instructions <span class="opt-tag">optional</span></div>
+    <p class="desc">Paste if updated this sprint. Leave blank to use standard template text.</p>
+    <textarea id="login" rows="3" placeholder="URL: https://gcp-stage.company.com&#10;User ID: testuser01&#10;Steps: Open incognito, navigate to URL..."></textarea>
+  </div>
+
+  <!-- Test Data -->
+  <div class="card">
+    <div class="lbl">🧪 Test data <span class="opt-tag">optional</span></div>
+    <textarea id="td" rows="3" placeholder="User Story 1: jatin.nagpal&#10;User Story 2: jugal.panchal"></textarea>
+  </div>
+
+  <!-- Recurring Defects -->
+  <div class="card">
+    <div class="lbl">🐛 Recurring defects <span class="opt-tag">auto-checked by assistant</span></div>
+    <p class="desc">Paste your <code>Recurring_Defects.md</code> from GitHub. Risks are auto-matched to this sprint's functional areas.</p>
+    <textarea id="defects" rows="5" placeholder="| Defect ID | Sprint | Functional Area | Description | Category | Status |&#10;|-----------|--------|-----------------|-------------|----------|--------|&#10;| D-001 | Sprint 10 | Approval Workflow | Approval button not triggering | Functional Bug | Closed |&#10;| D-002 | Sprint 12 | Email Templates | ~MPSDate~ not resolving | Functional Bug | Closed |"></textarea>
+    <div class="gh-box">
+      <span>🐙</span>
+      <span>Store <strong>Recurring_Defects.md</strong> in your GitHub repo — business views in browser, paste content here each sprint. No Excel needed.</span>
+    </div>
+  </div>
+
+  <!-- Sign-off counts -->
+  <div class="card">
+    <div class="lbl">✅ Sign-off observation counts <span class="opt-tag">for sign-off email only</span></div>
+    <p class="desc">Fill in defect counts for the observation summary table in the sign-off email.</p>
+    <div class="row2">
+      <div><span class="field-lbl">Functional bugs</span><input type="text" id="bugs" placeholder="0"></div>
+      <div><span class="field-lbl">Incorrect BR implemented</span><input type="text" id="incbr" placeholder="0"></div>
+    </div>
+    <span class="field-lbl">New business requirements</span>
+    <input type="text" id="newbr" placeholder="0">
+  </div>
+
+  <hr>
+
+  <p class="section-title">Generate email — pick one, opens pre-filled in Outlook</p>
+  <div class="email-btns">
+    <button class="ebtn" onclick="generate('pre')">
+      <div class="eicon">📤</div>
+      <div class="et">Pre-UAT / Kick-off</div>
+      <div class="es">Send before UAT starts</div>
+    </button>
+    <button class="ebtn" onclick="generate('reminder')">
+      <div class="eicon">🔔</div>
+      <div class="et">Reminder</div>
+      <div class="es">Send during UAT</div>
+    </button>
+    <button class="ebtn" onclick="generate('signoff')">
+      <div class="eicon">✅</div>
+      <div class="et">Sign-off</div>
+      <div class="es">Send after UAT ends</div>
+    </button>
+  </div>
+
+  <div class="tip-success">
+    ✅ <span>Clicking a button generates the formatted email + Outlook link. Nothing sends automatically — you review first.</span>
+  </div>
+
+  <!-- Output Area -->
+  <div class="output-area" id="output-area">
+    <div class="spinner" id="spinner"><span class="loading-dots">Generating your email</span></div>
+    <div id="output-content" style="display:none">
+      <div class="output-tabs">
+        <button class="tab active" onclick="switchTab('preview')">📧 Email Preview</button>
+        <button class="tab" onclick="switchTab('plain')">📝 Plain Text</button>
+      </div>
+      <div class="tab-content active" id="tab-preview"></div>
+      <div class="tab-content" id="tab-plain"></div>
+      <div id="outlook-link-area"></div>
+      <div class="checklist" id="checklist-area" style="display:none">
+        <p>⚠️ Before sending — attach these files in Outlook:</p>
+        <ul id="checklist-items"></ul>
+      </div>
+      <div class="risk-box" id="risk-box" style="display:none">
+        <strong>🚨 Defect Risk Flags</strong>
+        <div id="risk-content"></div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// Paste your Anthropic API key below to enable AI generation.
+// Get it from: https://console.anthropic.com/
+const API_KEY = 'YOUR_API_KEY_HERE';
+const MODEL   = 'claude-sonnet-4-6';
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+let uploadedFiles = [];
+
+function handleFiles(f) {
+  for (const x of f) { if (!uploadedFiles.find(u => u.name === x.name)) uploadedFiles.push(x); }
+  renderFiles();
+  document.getElementById('file-inp').value = '';
+}
+
+function removeFile(name) {
+  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+  renderFiles();
+}
+
+function renderFiles() {
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  uploadedFiles.forEach(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    const icon = ext==='pdf' ? '📕' : ['xlsx','xls','csv'].includes(ext) ? '📊' : ['doc','docx'].includes(ext) ? '📝' : '📄';
+    list.innerHTML += `<div class="file-item">
+      <div class="file-left"><span>${icon}</span> ${f.name}</div>
+      <button class="file-rm" onclick="removeFile('${f.name.replace(/'/g,"\\'")}')">×</button>
+    </div>`;
+  });
+}
+
+// ─── DATE FORMAT ─────────────────────────────────────────────────────────────
+function fmt(d) {
+  if (!d) return '[DD-MMM-YYYY]';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
+}
+
+// ─── TAB SWITCH ──────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ─── GENERATE ────────────────────────────────────────────────────────────────
+async function generate(type) {
+  const release  = document.getElementById('release').value.trim()  || '[Sprint / Release]';
+  const start    = fmt(document.getElementById('start').value);
+  const end      = fmt(document.getElementById('end').value);
+  const to       = document.getElementById('to').value.trim();
+  const cc       = document.getElementById('cc').value.trim();
+  const contacts = document.getElementById('contacts').value.trim();
+  const us       = document.getElementById('us').value.trim();
+  const login    = document.getElementById('login').value.trim();
+  const td       = document.getElementById('td').value.trim();
+  const defects  = document.getElementById('defects').value.trim();
+  const bugs     = document.getElementById('bugs').value.trim()  || 'X';
+  const incbr    = document.getElementById('incbr').value.trim() || 'X';
+  const newbr    = document.getElementById('newbr').value.trim() || 'X';
+  const fileNames = uploadedFiles.map(f => f.name);
+
+  if (!us) { alert('Please paste at least the User Story / CR documents to continue.'); return; }
+
+  if (API_KEY === 'YOUR_API_KEY_HERE') {
+    alert('Add your Anthropic API key at the top of this file to enable AI generation.\n\nOr use this tool inside Claude.ai where AI is built in.');
+    return;
+  }
+
+  // Show loading
+  const outputArea = document.getElementById('output-area');
+  outputArea.classList.add('visible');
+  document.getElementById('spinner').classList.add('visible');
+  document.getElementById('output-content').style.display = 'none';
+
+  const labels = { pre:'Pre-UAT / Kick-off Email', reminder:'UAT Reminder Email', signoff:'UAT Sign-off Email' };
+
+  const systemPrompt = `You are the GCP UAT Coordinator Assistant. You help QA teams prepare UAT communication emails using approved templates. You NEVER rewrite, restructure, or improve the templates — you only populate them with sprint-specific information. Always respond in JSON format as instructed.`;
+
+  let userPrompt = `Generate ${labels[type]} for the following sprint data.
+
+SPRINT: ${release}
+UAT START: ${start}
+UAT END: ${end}
+${to ? 'TO: '+to : ''}
+${cc ? 'CC: '+cc : ''}
+${contacts ? 'SUPPORT CONTACTS: '+contacts : ''}
+${fileNames.length ? 'ATTACHED FILES: '+fileNames.join(', ') : ''}
+${type==='signoff' ? `OBSERVATION COUNTS — Functional Bugs: ${bugs} | Incorrect BR Implemented: ${incbr} | New BR: ${newbr}` : ''}
+
+--- USER STORIES ---
+${us}
+${login ? '\n--- LOGIN INSTRUCTIONS ---\n'+login : ''}
+${td ? '\n--- TEST DATA ---\n'+td : ''}
+${defects ? '\n--- RECURRING DEFECTS (auto-match to sprint functional areas, flag risks) ---\n'+defects : ''}
+
+APPROVED TEMPLATES (populate exactly, never rewrite):
+
+PRE-UAT TEMPLATE:
+Subject: UAT Commencement – [Release Name / Sprint] – [X] User Stories
+Hi Team,
+UAT is scheduled to commence for the below User Stories.
+UAT Timeline
+Start Date: [DD-MMM-YYYY]
+End Date: [DD-MMM-YYYY] (Maximum 5 working days)
+User Stories in Scope
+[TABLE: User Story ID | User Story Name]
+Attached Documents
+Please refer to the attached documents for UAT validation:
+[LIST OF ATTACHED FILES or standard bullets]
+GCP Stage Login Instructions
+Please use the latest Stage environment login details shared for UAT validation.
+Login Steps:
+[LOGIN STEPS FROM INPUT]
+Test Data
+Please use only the designated UAT test data shared by the testing team and avoid modifying data being used by other users.
+[TEST DATA FROM INPUT]
+Observation Tracker
+Please log all observations in the UAT Tracker. Observations will be classified as:
+- Functional Bug
+- Incorrect Business Requirement Implemented
+- New Business Requirement
+Support Contacts
+For any questions or issues during UAT:
+[SUPPORT CONTACTS]
+Kindly complete your validation within the UAT timeline and provide your observations in the tracker.
+Thanks & Regards,
+GCP QA Team
+
+REMINDER TEMPLATE:
+Subject: Reminder: UAT in Progress – [Release Name / Sprint]
+Hi Team,
+A gentle reminder that UAT is currently in progress for the below User Stories:
+[US LIST]
+UAT End Date: [DD-MMM-YYYY]
+If you identify any observations, please log them in the UAT Tracker at the earliest to enable timely review and resolution.
+If no issues are found, kindly update the tracker and confirm completion of your validation.
+Please reach out to the QA team if any assistance is required.
+Thanks & Regards,
+GCP QA Team
+
+SIGN-OFF TEMPLATE:
+Subject: UAT Completion & Sign-off Request – [Release Name / Sprint]
+Hi Team,
+UAT activities for the below User Stories have been completed:
+[US LIST]
+Observation Summary
+[TABLE: Category | Count — Functional Bugs | X, Incorrect Business Requirement Implemented | X, New Business Requirement | X]
+Kindly review the tracker and provide your UAT sign-off confirmation by replying to this email.
+If no further observations exist, we will consider UAT completed and proceed with the planned release activities.
+Thanks for your participation and support.
+Thanks & Regards,
+GCP QA Team
+
+INSTRUCTIONS:
+1. Use sprint name, dates, recipients EXACTLY as provided. Change nothing.
+2. Extract all US IDs and clean titles. Present in a table.
+3. Bold section headings, dates, table headers, support contact names using **bold**.
+4. List attached files exactly as provided under Attached Documents.
+5. If defects provided, match to sprint functional areas and identify risks.
+6. Return ONLY valid JSON in this exact structure:
+{
+  "subject": "email subject line",
+  "preview_html": "formatted HTML email body with <strong> tags for bold, <table> for US table, <ul><li> for lists",
+  "plain_text": "plain text version of the email",
+  "risk_flags": "string with risk flag details, or empty string if none",
+  "to": "${to}",
+  "cc": "${cc}"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 3000, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] })
+    });
+
+    const data = await res.json();
+    const raw = data.content[0].text.replace(/```json|```/g,'').trim();
+    const result = JSON.parse(raw);
+
+    // Render preview
+    document.getElementById('tab-preview').innerHTML = `
+      <div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase">Subject</span>
+        <p style="font-size:14px;font-weight:600;color:#1a1a1a;margin-top:4px">${result.subject}</p>
+      </div>
+      <div style="line-height:1.9;font-size:13px">${result.preview_html}</div>`;
+
+    // Render plain text
+    document.getElementById('tab-plain').innerHTML = `<pre>${result.plain_text}</pre>`;
+
+    // Outlook link
+    const toEnc  = encodeURIComponent(result.to || to);
+    const ccEnc  = encodeURIComponent(result.cc || cc);
+    const subEnc = encodeURIComponent(result.subject);
+    const bodyEnc = encodeURIComponent(result.plain_text);
+    document.getElementById('outlook-link-area').innerHTML =
+      `<a class="outlook-btn" href="mailto:${toEnc}?cc=${ccEnc}&subject=${subEnc}&body=${bodyEnc}">📨 Open in Outlook</a>`;
+
+    // Checklist
+    if (fileNames.length) {
+      const cl = document.getElementById('checklist-area');
+      const items = document.getElementById('checklist-items');
+      cl.style.display = 'block';
+      items.innerHTML = fileNames.map(n => `<li><input type="checkbox"> Attach <strong>${n}</strong> in Outlook</li>`).join('');
+    }
+
+    // Risk flags
+    if (result.risk_flags && result.risk_flags.trim()) {
+      const rb = document.getElementById('risk-box');
+      rb.style.display = 'block';
+      document.getElementById('risk-content').textContent = result.risk_flags;
+    }
+
+    document.getElementById('spinner').classList.remove('visible');
+    document.getElementById('output-content').style.display = 'block';
+
+  } catch(err) {
+    document.getElementById('spinner').classList.remove('visible');
+    document.getElementById('tab-preview').innerHTML = `<p style="color:#c0392b;font-size:13px">Error generating email: ${err.message}. Check your API key and try again.</p>`;
+    document.getElementById('output-content').style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>
