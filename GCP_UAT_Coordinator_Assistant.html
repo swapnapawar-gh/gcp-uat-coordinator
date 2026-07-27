@@ -82,7 +82,7 @@
   <!-- Sprint Info -->
   <div class="card">
     <div class="lbl">🏁 Sprint info</div>
-    <input type="text" id="release" placeholder="Sprint / Release name  e.g. SPrint R26.15">
+    <input type="text" id="release" placeholder="Sprint / Release name  e.g. Sprint R1.0">
     <div class="row2">
       <div><span class="field-lbl">UAT start date</span><input type="date" id="start"></div>
       <div><span class="field-lbl">UAT end date</span><input type="date" id="end"></div>
@@ -111,8 +111,12 @@
     </div>
     <input type="file" id="file-inp" multiple style="display:none" onchange="handleFiles(this.files)">
     <div class="file-list" id="file-list"></div>
-    <div class="tip-info">
+    <div class="tip-info" id="file-tip">
       ℹ️ <span>Outlook mailto links cannot auto-attach files (browser security limit). File names are listed in the email body as a reminder to attach manually before sending.</span>
+    </div>
+    <div id="file-paths" style="display:none;margin-top:8px;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;font-size:12px;color:#555">
+      <div style="font-weight:600;margin-bottom:6px;color:#333">📁 File locations — click to open folder:</div>
+      <div id="file-path-list" style="display:flex;flex-direction:column;gap:4px"></div>
     </div>
   </div>
 
@@ -120,7 +124,7 @@
   <div class="card">
     <div class="lbl">📄 User stories / CR documents <span class="opt-tag">mandatory</span></div>
     <p class="desc">Paste all US/CR content for this sprint — IDs, titles, requirements, acceptance criteria.</p>
-    <textarea id="us" rows="7" placeholder="ID&#9;Title&#9;Assigned To&#10;2110105&#9;Non CR: Dynamic config ATCI offshore workflow...&#10;2110144&#9;CR: Extension of ~MPSDate~ placeholder..."></textarea>
+    <textarea id="us" rows="7" placeholder="ID&#9;Title&#9;Assigned To&#10;1001&#9;Non CR: User story title here...&#10;1002&#9;CR: Another user story title..."></textarea>
   </div>
 
   <!-- Login -->
@@ -133,14 +137,14 @@
   <!-- Test Data -->
   <div class="card">
     <div class="lbl">🧪 Test data <span class="opt-tag">optional</span></div>
-    <textarea id="td" rows="3" placeholder="User Story 1: Userstories&#10;User Story 2: us 2"></textarea>
+    <textarea id="td" rows="3" placeholder="User Story 1: testuser.one&#10;User Story 2: testuser.two"></textarea>
   </div>
 
   <!-- Recurring Defects -->
   <div class="card">
     <div class="lbl">🐛 Recurring defects <span class="opt-tag">auto-checked by assistant</span></div>
     <p class="desc">Paste your <code>Recurring_Defects.md</code> from GitHub. Risks are auto-matched to this sprint's functional areas.</p>
-    <textarea id="defects" rows="5" placeholder="| Defect ID | Sprint | Functional Area | Description | Category | Status |&#10;|-----------|--------|-----------------|-------------|----------|--------|&#10;| D-001 | Sprint 10 | Approval Workflow | Approval button not triggering | Functional Bug | Closed |&#10;| D-002 | Sprint 12 | Email Templates | ~MPSDate~ not resolving | Functional Bug | Closed |"></textarea>
+    <textarea id="defects" rows="5" placeholder="| Defect ID | Sprint | Functional Area | Description | Category | Status |&#10;|-----------|--------|-----------------|-------------|----------|--------|&#10;| D-001 | Sprint 1 | Module A | Brief description of defect | Functional Bug | Closed |&#10;| D-002 | Sprint 2 | Module B | Brief description of defect | Functional Bug | Open |"></textarea>
     <div class="gh-box">
       <span>🐙</span>
       <span>Store <strong>Recurring_Defects.md</strong> in your GitHub repo — business views in browser, paste content here each sprint. No Excel needed.</span>
@@ -181,12 +185,12 @@
   </div>
 
   <div class="tip-success">
-    ✅ <span>Clicking a button generates the formatted email + Outlook link. Nothing sends automatically — you review first.</span>
+    ✅ <span>Clicking a button instantly builds the formatted email + Outlook link from your inputs. Nothing sends automatically — you review first.</span>
   </div>
 
   <!-- Output Area -->
   <div class="output-area" id="output-area">
-    <div class="spinner" id="spinner"><span class="loading-dots">Generating your email</span></div>
+    <div class="spinner" id="spinner" style="display:none"></div>
     <div id="output-content" style="display:none">
       <div class="output-tabs">
         <button class="tab active" onclick="switchTab('preview')">📧 Email Preview</button>
@@ -210,11 +214,7 @@
 </div>
 
 <script>
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-// Paste your Anthropic API key below to enable AI generation.
-// Get it from: https://console.anthropic.com/
-const API_KEY = 'YOUR_API_KEY_HERE';
-const MODEL   = 'claude-sonnet-4-6';
+// ─── STATIC MODE — no API key needed ─────────────────────────────────────────
 
 // ─── FILE HANDLING ────────────────────────────────────────────────────────────
 let uploadedFiles = [];
@@ -241,6 +241,26 @@ function renderFiles() {
       <button class="file-rm" onclick="removeFile('${f.name.replace(/'/g,"\\'")}')">×</button>
     </div>`;
   });
+
+  // Show file paths panel
+  const pathsPanel = document.getElementById('file-paths');
+  const pathList   = document.getElementById('file-path-list');
+  if (uploadedFiles.length === 0) {
+    pathsPanel.style.display = 'none';
+    return;
+  }
+  pathsPanel.style.display = 'block';
+  pathList.innerHTML = uploadedFiles.map(f => {
+    const path = f.path || (f.webkitRelativePath ? f.webkitRelativePath : f.name);
+    const folderPath = path.includes('/') || path.includes('\\')
+      ? path.substring(0, Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')))
+      : '';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #eee">
+      <span style="flex-shrink:0">📄</span>
+      <span style="flex:1;word-break:break-all;font-family:'Courier New',monospace;font-size:11px">${path || f.name}</span>
+      ${folderPath ? `<a href="file:///${folderPath.replace(/\\/g,'/')}" title="Open folder" style="flex-shrink:0;color:#1a56db;text-decoration:none;font-size:11px" target="_blank">📂 Open</a>` : ''}
+    </div>`;
+  }).join('');
 }
 
 // ─── DATE FORMAT ─────────────────────────────────────────────────────────────
@@ -259,182 +279,143 @@ function switchTab(tab) {
 }
 
 // ─── GENERATE ────────────────────────────────────────────────────────────────
-async function generate(type) {
-  const release  = document.getElementById('release').value.trim()  || '[Sprint / Release]';
-  const start    = fmt(document.getElementById('start').value);
-  const end      = fmt(document.getElementById('end').value);
-  const to       = document.getElementById('to').value.trim();
-  const cc       = document.getElementById('cc').value.trim();
-  const contacts = document.getElementById('contacts').value.trim();
-  const us       = document.getElementById('us').value.trim();
-  const login    = document.getElementById('login').value.trim();
-  const td       = document.getElementById('td').value.trim();
-  const defects  = document.getElementById('defects').value.trim();
-  const bugs     = document.getElementById('bugs').value.trim()  || 'X';
-  const incbr    = document.getElementById('incbr').value.trim() || 'X';
-  const newbr    = document.getElementById('newbr').value.trim() || 'X';
+function generate(type) {
+  const release   = document.getElementById('release').value.trim()  || '[Sprint / Release]';
+  const start     = fmt(document.getElementById('start').value);
+  const end       = fmt(document.getElementById('end').value);
+  const to        = document.getElementById('to').value.trim();
+  const cc        = document.getElementById('cc').value.trim();
+  const contacts  = document.getElementById('contacts').value.trim();
+  const us        = document.getElementById('us').value.trim();
+  const login     = document.getElementById('login').value.trim();
+  const td        = document.getElementById('td').value.trim();
+  const bugs      = document.getElementById('bugs').value.trim()  || '0';
+  const incbr     = document.getElementById('incbr').value.trim() || '0';
+  const newbr     = document.getElementById('newbr').value.trim() || '0';
   const fileNames = uploadedFiles.map(f => f.name);
 
   if (!us) { alert('Please paste at least the User Story / CR documents to continue.'); return; }
 
-  if (API_KEY === 'YOUR_API_KEY_HERE') {
-    alert('Add your Anthropic API key at the top of this file to enable AI generation.\n\nOr use this tool inside Claude.ai where AI is built in.');
-    return;
+  // Parse US lines into rows
+  const usLines = us.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('ID') && !l.startsWith('---'));
+  const usRows = usLines.map(line => {
+    const parts = line.split(/\t|  {2,}/);
+    const id    = parts[0] ? parts[0].trim() : '';
+    const title = parts[1] ? parts[1].trim() : line.trim();
+    return { id, title };
+  });
+
+  const usTableHtml = `<table style="border-collapse:collapse;width:100%;font-size:13px;margin:8px 0">
+    <tr style="background:#e8f0fe"><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:left">User Story ID</th><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:left">User Story Name</th></tr>
+    ${usRows.map(r => `<tr><td style="border:1px solid #e5e5e5;padding:6px 10px">${r.id}</td><td style="border:1px solid #e5e5e5;padding:6px 10px">${r.title}</td></tr>`).join('')}
+  </table>`;
+
+  const usListHtml = usRows.map(r => `<li>${r.id ? r.id + ' — ' : ''}${r.title}</li>`).join('');
+  const usPlain    = usRows.map(r => `  • ${r.id ? r.id + ' — ' : ''}${r.title}`).join('\n');
+
+  const filesHtml  = fileNames.length
+    ? '<ul>' + fileNames.map(n => `<li>${n}</li>`).join('') + '</ul>'
+    : '<ul><li>UAT Tracker</li><li>Login Instructions</li><li>Test Data Sheet</li></ul>';
+  const filesPlain = fileNames.length
+    ? fileNames.map(n => `  • ${n}`).join('\n')
+    : '  • UAT Tracker\n  • Login Instructions\n  • Test Data Sheet';
+
+  const loginHtml  = login ? login.replace(/\n/g,'<br>') : 'Please use the latest Stage environment login details shared for UAT validation.';
+  const loginPlain = login || 'Please use the latest Stage environment login details shared for UAT validation.';
+  const tdHtml     = td ? td.replace(/\n/g,'<br>') : 'Please use only the designated UAT test data shared by the testing team.';
+  const tdPlain    = td || 'Please use only the designated UAT test data shared by the testing team.';
+  const contactsHtml  = contacts ? contacts.replace(/\|/g,'<br>') : '[Support contacts not provided]';
+  const contactsPlain = contacts ? contacts.replace(/\|/g,'\n') : '[Support contacts not provided]';
+  const usCount = usRows.length;
+
+  let subject, previewHtml, plainText;
+
+  if (type === 'pre') {
+    subject = `UAT Commencement – ${release} – ${usCount} User Stor${usCount===1?'y':'ies'}`;
+    previewHtml = `
+      <p>Hi Team,</p><br>
+      <p>UAT is scheduled to commence for the below User Stories.</p><br>
+      <p><strong>UAT Timeline</strong></p>
+      <p>Start Date: <strong>${start}</strong><br>End Date: <strong>${end}</strong> (Maximum 5 working days)</p><br>
+      <p><strong>User Stories in Scope</strong></p>
+      ${usTableHtml}
+      <p><strong>Attached Documents</strong></p>
+      <p>Please refer to the attached documents for UAT validation:</p>
+      ${filesHtml}
+      <p><strong>GCP Stage Login Instructions</strong></p>
+      <p>${loginHtml}</p><br>
+      <p><strong>Test Data</strong></p>
+      <p>${tdHtml}</p><br>
+      <p><strong>Observation Tracker</strong></p>
+      <p>Please log all observations in the UAT Tracker. Observations will be classified as:</p>
+      <ul><li>Functional Bug</li><li>Incorrect Business Requirement Implemented</li><li>New Business Requirement</li></ul>
+      <p><strong>Support Contacts</strong></p>
+      <p>For any questions or issues during UAT:</p>
+      <p>${contactsHtml}</p><br>
+      <p>Kindly complete your validation within the UAT timeline and provide your observations in the tracker.</p><br>
+      <p>Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p>`;
+    plainText = `Hi Team,\n\nUAT is scheduled to commence for the below User Stories.\n\nUAT Timeline\nStart Date: ${start}\nEnd Date: ${end} (Maximum 5 working days)\n\nUser Stories in Scope\n${usPlain}\n\nAttached Documents\nPlease refer to the attached documents for UAT validation:\n${filesPlain}\n\nGCP Stage Login Instructions\n${loginPlain}\n\nTest Data\n${tdPlain}\n\nObservation Tracker\nPlease log all observations in the UAT Tracker. Observations will be classified as:\n  • Functional Bug\n  • Incorrect Business Requirement Implemented\n  • New Business Requirement\n\nSupport Contacts\nFor any questions or issues during UAT:\n${contactsPlain}\n\nKindly complete your validation within the UAT timeline and provide your observations in the tracker.\n\nThanks & Regards,\nGCP QA Team`;
+
+  } else if (type === 'reminder') {
+    subject = `Reminder: UAT in Progress – ${release}`;
+    previewHtml = `
+      <p>Hi Team,</p><br>
+      <p>A gentle reminder that UAT is currently in progress for the below User Stories:</p>
+      <ul>${usListHtml}</ul>
+      <p>UAT End Date: <strong>${end}</strong></p><br>
+      <p>If you identify any observations, please log them in the UAT Tracker at the earliest to enable timely review and resolution.</p>
+      <p>If no issues are found, kindly update the tracker and confirm completion of your validation.</p><br>
+      <p>Please reach out to the QA team if any assistance is required.</p><br>
+      <p>Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p>`;
+    plainText = `Hi Team,\n\nA gentle reminder that UAT is currently in progress for the below User Stories:\n\n${usPlain}\n\nUAT End Date: ${end}\n\nIf you identify any observations, please log them in the UAT Tracker at the earliest to enable timely review and resolution.\nIf no issues are found, kindly update the tracker and confirm completion of your validation.\n\nPlease reach out to the QA team if any assistance is required.\n\nThanks & Regards,\nGCP QA Team`;
+
+  } else {
+    subject = `UAT Completion & Sign-off Request – ${release}`;
+    const obsTableHtml = `<table style="border-collapse:collapse;width:100%;font-size:13px;margin:8px 0">
+      <tr style="background:#e8f0fe"><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:left">Category</th><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:center">Count</th></tr>
+      <tr><td style="border:1px solid #e5e5e5;padding:6px 10px">Functional Bugs</td><td style="border:1px solid #e5e5e5;padding:6px 10px;text-align:center">${bugs}</td></tr>
+      <tr><td style="border:1px solid #e5e5e5;padding:6px 10px">Incorrect Business Requirement Implemented</td><td style="border:1px solid #e5e5e5;padding:6px 10px;text-align:center">${incbr}</td></tr>
+      <tr><td style="border:1px solid #e5e5e5;padding:6px 10px">New Business Requirement</td><td style="border:1px solid #e5e5e5;padding:6px 10px;text-align:center">${newbr}</td></tr>
+    </table>`;
+    previewHtml = `
+      <p>Hi Team,</p><br>
+      <p>UAT activities for the below User Stories have been completed:</p>
+      <ul>${usListHtml}</ul>
+      <p><strong>Observation Summary</strong></p>
+      ${obsTableHtml}
+      <p>Kindly review the tracker and provide your UAT sign-off confirmation by replying to this email.</p><br>
+      <p>If no further observations exist, we will consider UAT completed and proceed with the planned release activities.</p>
+      <p>Thanks for your participation and support.</p><br>
+      <p>Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p>`;
+    plainText = `Hi Team,\n\nUAT activities for the below User Stories have been completed:\n\n${usPlain}\n\nObservation Summary\nFunctional Bugs: ${bugs}\nIncorrect Business Requirement Implemented: ${incbr}\nNew Business Requirement: ${newbr}\n\nKindly review the tracker and provide your UAT sign-off confirmation by replying to this email.\n\nIf no further observations exist, we will consider UAT completed and proceed with the planned release activities.\nThanks for your participation and support.\n\nThanks & Regards,\nGCP QA Team`;
   }
 
-  // Show loading
+  // Show output
   const outputArea = document.getElementById('output-area');
   outputArea.classList.add('visible');
-  document.getElementById('spinner').classList.add('visible');
-  document.getElementById('output-content').style.display = 'none';
+  document.getElementById('spinner').classList.remove('visible');
+  document.getElementById('output-content').style.display = 'block';
 
-  const labels = { pre:'Pre-UAT / Kick-off Email', reminder:'UAT Reminder Email', signoff:'UAT Sign-off Email' };
+  document.getElementById('tab-preview').innerHTML = `
+    <div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:1rem">
+      <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase">Subject</span>
+      <p style="font-size:14px;font-weight:600;color:#1a1a1a;margin-top:4px">${subject}</p>
+    </div>
+    <div style="line-height:1.9;font-size:13px">${previewHtml}</div>`;
 
-  const systemPrompt = `You are the GCP UAT Coordinator Assistant. You help QA teams prepare UAT communication emails using approved templates. You NEVER rewrite, restructure, or improve the templates — you only populate them with sprint-specific information. Always respond in JSON format as instructed.`;
+  document.getElementById('tab-plain').innerHTML = `<pre>${plainText}</pre>`;
 
-  let userPrompt = `Generate ${labels[type]} for the following sprint data.
+  const toEnc   = encodeURIComponent(to);
+  const ccEnc   = encodeURIComponent(cc);
+  const subEnc  = encodeURIComponent(subject);
+  const bodyEnc = encodeURIComponent(plainText);
+  document.getElementById('outlook-link-area').innerHTML =
+    `<a class="outlook-btn" href="mailto:${toEnc}?cc=${ccEnc}&subject=${subEnc}&body=${bodyEnc}">📨 Open in Outlook</a>`;
 
-SPRINT: ${release}
-UAT START: ${start}
-UAT END: ${end}
-${to ? 'TO: '+to : ''}
-${cc ? 'CC: '+cc : ''}
-${contacts ? 'SUPPORT CONTACTS: '+contacts : ''}
-${fileNames.length ? 'ATTACHED FILES: '+fileNames.join(', ') : ''}
-${type==='signoff' ? `OBSERVATION COUNTS — Functional Bugs: ${bugs} | Incorrect BR Implemented: ${incbr} | New BR: ${newbr}` : ''}
-
---- USER STORIES ---
-${us}
-${login ? '\n--- LOGIN INSTRUCTIONS ---\n'+login : ''}
-${td ? '\n--- TEST DATA ---\n'+td : ''}
-${defects ? '\n--- RECURRING DEFECTS (auto-match to sprint functional areas, flag risks) ---\n'+defects : ''}
-
-APPROVED TEMPLATES (populate exactly, never rewrite):
-
-PRE-UAT TEMPLATE:
-Subject: UAT Commencement – [Release Name / Sprint] – [X] User Stories
-Hi Team,
-UAT is scheduled to commence for the below User Stories.
-UAT Timeline
-Start Date: [DD-MMM-YYYY]
-End Date: [DD-MMM-YYYY] (Maximum 5 working days)
-User Stories in Scope
-[TABLE: User Story ID | User Story Name]
-Attached Documents
-Please refer to the attached documents for UAT validation:
-[LIST OF ATTACHED FILES or standard bullets]
-GCP Stage Login Instructions
-Please use the latest Stage environment login details shared for UAT validation.
-Login Steps:
-[LOGIN STEPS FROM INPUT]
-Test Data
-Please use only the designated UAT test data shared by the testing team and avoid modifying data being used by other users.
-[TEST DATA FROM INPUT]
-Observation Tracker
-Please log all observations in the UAT Tracker. Observations will be classified as:
-- Functional Bug
-- Incorrect Business Requirement Implemented
-- New Business Requirement
-Support Contacts
-For any questions or issues during UAT:
-[SUPPORT CONTACTS]
-Kindly complete your validation within the UAT timeline and provide your observations in the tracker.
-Thanks & Regards,
-GCP QA Team
-
-REMINDER TEMPLATE:
-Subject: Reminder: UAT in Progress – [Release Name / Sprint]
-Hi Team,
-A gentle reminder that UAT is currently in progress for the below User Stories:
-[US LIST]
-UAT End Date: [DD-MMM-YYYY]
-If you identify any observations, please log them in the UAT Tracker at the earliest to enable timely review and resolution.
-If no issues are found, kindly update the tracker and confirm completion of your validation.
-Please reach out to the QA team if any assistance is required.
-Thanks & Regards,
-GCP QA Team
-
-SIGN-OFF TEMPLATE:
-Subject: UAT Completion & Sign-off Request – [Release Name / Sprint]
-Hi Team,
-UAT activities for the below User Stories have been completed:
-[US LIST]
-Observation Summary
-[TABLE: Category | Count — Functional Bugs | X, Incorrect Business Requirement Implemented | X, New Business Requirement | X]
-Kindly review the tracker and provide your UAT sign-off confirmation by replying to this email.
-If no further observations exist, we will consider UAT completed and proceed with the planned release activities.
-Thanks for your participation and support.
-Thanks & Regards,
-GCP QA Team
-
-INSTRUCTIONS:
-1. Use sprint name, dates, recipients EXACTLY as provided. Change nothing.
-2. Extract all US IDs and clean titles. Present in a table.
-3. Bold section headings, dates, table headers, support contact names using **bold**.
-4. List attached files exactly as provided under Attached Documents.
-5. If defects provided, match to sprint functional areas and identify risks.
-6. Return ONLY valid JSON in this exact structure:
-{
-  "subject": "email subject line",
-  "preview_html": "formatted HTML email body with <strong> tags for bold, <table> for US table, <ul><li> for lists",
-  "plain_text": "plain text version of the email",
-  "risk_flags": "string with risk flag details, or empty string if none",
-  "to": "${to}",
-  "cc": "${cc}"
-}`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 3000, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] })
-    });
-
-    const data = await res.json();
-    const raw = data.content[0].text.replace(/```json|```/g,'').trim();
-    const result = JSON.parse(raw);
-
-    // Render preview
-    document.getElementById('tab-preview').innerHTML = `
-      <div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:1rem">
-        <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase">Subject</span>
-        <p style="font-size:14px;font-weight:600;color:#1a1a1a;margin-top:4px">${result.subject}</p>
-      </div>
-      <div style="line-height:1.9;font-size:13px">${result.preview_html}</div>`;
-
-    // Render plain text
-    document.getElementById('tab-plain').innerHTML = `<pre>${result.plain_text}</pre>`;
-
-    // Outlook link
-    const toEnc  = encodeURIComponent(result.to || to);
-    const ccEnc  = encodeURIComponent(result.cc || cc);
-    const subEnc = encodeURIComponent(result.subject);
-    const bodyEnc = encodeURIComponent(result.plain_text);
-    document.getElementById('outlook-link-area').innerHTML =
-      `<a class="outlook-btn" href="mailto:${toEnc}?cc=${ccEnc}&subject=${subEnc}&body=${bodyEnc}">📨 Open in Outlook</a>`;
-
-    // Checklist
-    if (fileNames.length) {
-      const cl = document.getElementById('checklist-area');
-      const items = document.getElementById('checklist-items');
-      cl.style.display = 'block';
-      items.innerHTML = fileNames.map(n => `<li><input type="checkbox"> Attach <strong>${n}</strong> in Outlook</li>`).join('');
-    }
-
-    // Risk flags
-    if (result.risk_flags && result.risk_flags.trim()) {
-      const rb = document.getElementById('risk-box');
-      rb.style.display = 'block';
-      document.getElementById('risk-content').textContent = result.risk_flags;
-    }
-
-    document.getElementById('spinner').classList.remove('visible');
-    document.getElementById('output-content').style.display = 'block';
-
-  } catch(err) {
-    document.getElementById('spinner').classList.remove('visible');
-    document.getElementById('tab-preview').innerHTML = `<p style="color:#c0392b;font-size:13px">Error generating email: ${err.message}. Check your API key and try again.</p>`;
-    document.getElementById('output-content').style.display = 'block';
+  if (fileNames.length) {
+    document.getElementById('checklist-area').style.display = 'block';
+    document.getElementById('checklist-items').innerHTML =
+      fileNames.map(n => `<li><input type="checkbox"> Attach <strong>${n}</strong> in Outlook</li>`).join('');
   }
 }
 </script>
