@@ -3,421 +3,852 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GCP UAT Coordinator Assistant</title>
+<title>GCP UAT Coordinator</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh;padding:2rem 1rem}
-  .container{max-width:780px;margin:0 auto}
-  .hdr{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-  .hdr h1{font-size:20px;font-weight:600;color:#1a1a1a}
-  .badge{background:#e8f0fe;color:#1a56db;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
-  .sub{font-size:13px;color:#555;margin-bottom:1.5rem;line-height:1.6}
-  .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
-  .lbl{font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-  .lbl svg{flex-shrink:0}
-  .opt-tag{font-size:11px;color:#999;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:20px;padding:2px 8px;font-weight:400;text-transform:none;letter-spacing:0}
-  .desc{font-size:13px;color:#555;line-height:1.6}
-  .field-lbl{font-size:12px;color:#555;margin-top:10px;display:block;font-weight:500}
-  textarea,input[type=text],input[type=date]{width:100%;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#fafafa;line-height:1.6;margin-top:6px;transition:border-color .15s}
-  textarea{resize:vertical}
-  textarea:focus,input:focus{outline:none;border-color:#1a56db;background:#fff}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  hr{border:none;border-top:1px solid #e5e5e5;margin:1.5rem 0}
-  .upload-zone{border:1.5px dashed #ccc;border-radius:8px;padding:20px;text-align:center;margin-top:10px;cursor:pointer;transition:all .15s;background:#fafafa}
-  .upload-zone:hover{background:#f0f4ff;border-color:#1a56db}
-  .upload-zone .icon{font-size:28px;margin-bottom:6px}
-  .upload-zone p{font-size:13px;color:#555}
-  .upload-zone small{font-size:11px;color:#999}
-  .file-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
-  .file-item{display:flex;align-items:center;justify-content:space-between;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:8px 12px}
-  .file-left{display:flex;align-items:center;gap:8px;font-size:13px;color:#1a1a1a;word-break:break-all}
-  .file-rm{background:none;border:none;cursor:pointer;color:#999;font-size:18px;padding:0 2px;line-height:1}
-  .file-rm:hover{color:#e53e3e}
-  .tip-info{background:#e8f0fe;border:1px solid #c3d3fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#1a56db;margin-top:10px;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
-  .tip-success{background:#e6f4ea;border:1px solid #b7dfbf;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e6e31;margin-top:1rem;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
-  .tip-warn{background:#fff8e6;border:1px solid #fcd77a;border-radius:8px;padding:10px 14px;font-size:12px;color:#7a4f00;margin-top:.75rem;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
-  .gh-box{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;font-size:12px;color:#555;margin-top:10px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
-  .email-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:1rem}
-  .ebtn{border:1px solid #ccc;background:#fff;border-radius:10px;padding:16px 10px;cursor:pointer;text-align:center;transition:all .15s;width:100%}
-  .ebtn:hover{background:#f0f4ff;border-color:#1a56db}
-  .ebtn .eicon{font-size:22px;margin-bottom:6px}
-  .ebtn .et{font-size:12px;font-weight:600;color:#1a1a1a}
-  .ebtn .es{font-size:11px;color:#888;margin-top:3px}
-  .section-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:.75rem}
-  .output-area{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1.5rem;margin-top:1.5rem;display:none}
-  .output-area.visible{display:block}
-  .output-tabs{display:flex;gap:8px;margin-bottom:1rem;border-bottom:1px solid #e5e5e5;padding-bottom:0}
-  .tab{padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px}
-  .tab.active{color:#1a56db;border-bottom-color:#1a56db}
-  .tab-content{display:none;font-size:13px;line-height:1.8;color:#1a1a1a}
-  .tab-content.active{display:block}
-  .tab-content pre{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;font-size:12px;white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;overflow-x:auto}
-  .outlook-btn{display:inline-flex;align-items:center;gap:8px;background:#0072c6;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-top:1rem;transition:background .15s}
-  .outlook-btn:hover{background:#005fa3}
-  .checklist{background:#fff8e6;border:1px solid #fcd77a;border-radius:8px;padding:1rem;margin-top:1rem}
-  .checklist p{font-size:12px;font-weight:600;color:#7a4f00;margin-bottom:8px}
-  .checklist ul{list-style:none;display:flex;flex-direction:column;gap:6px}
-  .checklist li{display:flex;align-items:center;gap:8px;font-size:12px;color:#555}
-  .checklist li input[type=checkbox]{width:15px;height:15px;accent-color:#1a56db;flex-shrink:0}
-  .risk-box{background:#fff0f0;border:1px solid #fcc;border-radius:8px;padding:1rem;margin-top:1rem;font-size:12px;color:#c0392b;line-height:1.6}
-  .risk-box strong{display:block;margin-bottom:4px;font-size:13px}
-  .spinner{display:none;text-align:center;padding:2rem;color:#888;font-size:13px}
-  .spinner.visible{display:block}
-  .loading-dots::after{content:'...';animation:dots 1.2s steps(4,end) infinite}
-  @keyframes dots{0%,100%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
-  code{font-size:12px;background:#f0f0f0;padding:1px 5px;border-radius:4px;font-family:'Courier New',monospace}
-  @media(max-width:600px){.row2{grid-template-columns:1fr}.email-btns{grid-template-columns:1fr}}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:#eef0f4;color:#1a1a1a;font-size:13px}
+.shell{display:grid;grid-template-columns:440px 1fr;height:100vh}
+.pane-left{background:#f7f8fa;border-right:1px solid #dde0e6;display:flex;flex-direction:column;height:100vh}
+.left-scroll{flex:1;overflow-y:auto;padding:16px 16px 0}
+.pane-right{background:#fff;display:flex;flex-direction:column;height:100vh}
+.app-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.app-hdr h1{font-size:15px;font-weight:700}
+.badge{background:#1a56db;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.card{background:#fff;border:1px solid #e2e4ea;border-radius:10px;padding:13px;margin-bottom:9px}
+.ctitle{font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rstar{color:#e53e3e}
+.otag{font-size:10px;color:#aaa;background:#f5f5f5;border:1px solid #eee;border-radius:10px;padding:1px 7px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:3px}
+.dsm{font-size:11px;color:#888;margin-bottom:7px;line-height:1.5}
+.flbl{font-size:11px;color:#555;margin-top:8px;font-weight:600;display:flex;align-items:center;gap:3px}
+.req{color:#e53e3e}
+input[type=text],input[type=date],textarea{width:100%;border:1.5px solid #e0e0e0;border-radius:7px;padding:7px 10px;font-size:12px;font-family:inherit;color:#1a1a1a;background:#fafafa;line-height:1.5;margin-top:4px;transition:border-color .12s}
+textarea{resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:#1a56db;background:#fff;box-shadow:0 0 0 3px rgba(26,86,219,.07)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@keyframes blink{0%,100%{border-color:#e53e3e;box-shadow:0 0 0 3px rgba(229,62,62,.2)}50%{border-color:#fca5a5;box-shadow:none}}
+.ferr{animation:blink .7s ease-in-out 4;border-color:#e53e3e !important;background:#fff5f5 !important}
+.ferrs{border-color:#e53e3e !important;background:#fff5f5 !important;box-shadow:0 0 0 3px rgba(229,62,62,.1) !important}
+.emsg{font-size:10px;color:#e53e3e;margin-top:3px;display:none;font-weight:600}
+.emsg.on{display:block}
+.urow{display:flex;gap:8px;align-items:stretch;margin-top:6px}
+.uzone{border:1.5px dashed #1e6e31;border-radius:7px;padding:10px;text-align:center;cursor:pointer;background:#f6fff8;display:flex;align-items:center;gap:8px;justify-content:center;flex:1;transition:background .12s}
+.uzone:hover{background:#e6f4ea}
+.uzone p{font-size:12px;color:#1e6e31;font-weight:500;margin:0}
+.xlstat{margin-top:6px;font-size:11px;padding:7px 10px;border-radius:7px;display:none;line-height:1.6}
+.xlstat.ok{background:#e6f4ea;border:1px solid #b7dfbf;color:#1e6e31;display:block}
+.xlstat.er{background:#fff0f0;border:1px solid #fcc;color:#c0392b;display:block}
+.tplbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#f0f4ff;border:1.5px dashed #1a56db;border-radius:7px;padding:10px 12px;text-decoration:none;color:#1a56db;font-size:11px;font-weight:600;white-space:nowrap;min-width:88px}
+.tplbtn:hover{background:#dce6ff}
+.af{background:#e6f4ea !important;border-color:#1e6e31 !important}
+.uswrap{overflow-x:auto;margin-top:8px;border:1px solid #e0e0e0;border-radius:8px}
+table.ust{width:100%;border-collapse:collapse;font-size:11.5px;min-width:480px}
+table.ust thead tr{background:#1a56db}
+table.ust th{padding:8px;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;border-right:1px solid rgba(255,255,255,.15)}
+table.ust th:last-child{border-right:none;width:26px}
+table.ust tbody tr:nth-child(even){background:#f7f9ff}
+table.ust tbody tr:nth-child(odd){background:#fff}
+table.ust td{padding:4px 5px;border-bottom:1px solid #eee;border-right:1px solid #eee;vertical-align:top}
+table.ust td:last-child{border-right:none;text-align:center;vertical-align:middle}
+table.ust td textarea,table.ust td input[type=text]{margin-top:0;font-size:11px;border-radius:5px;padding:5px 6px;background:#fff;border:1px solid #e0e0e0;width:100%}
+table.ust td textarea{resize:vertical;min-height:44px}
+table.ust td input:focus,table.ust td textarea:focus{border-color:#1a56db;box-shadow:none;outline:none}
+.rmbtn{background:none;border:none;cursor:pointer;color:#ccc;font-size:15px;line-height:1}
+.rmbtn:hover{color:#e53e3e}
+.addrow{margin-top:7px;background:#f0f4ff;border:1.5px dashed #1a56db;color:#1a56db;border-radius:7px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;width:100%;text-align:center}
+.addrow:hover{background:#dce6ff}
+.stlist{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.strow{display:flex;align-items:center;gap:6px}
+.stlbl{font-size:11px;font-weight:700;color:#1a56db;min-width:40px;white-space:nowrap}
+.strow input{margin-top:0;flex:1;font-size:11px}
+.strm{background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;line-height:1;padding:0;flex-shrink:0}
+.strm:hover{color:#e53e3e}
+.addst{margin-top:6px;background:none;border:1px dashed #ccc;color:#888;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;width:100%;text-align:left}
+.addst:hover{border-color:#1a56db;color:#1a56db;background:#f0f4ff}
+.sprev{background:#f0f4ff;border:1px solid #c3d3fd;border-radius:7px;padding:8px 12px;margin-top:8px;display:none}
+.sprev .slbl{font-size:10px;font-weight:700;color:#1a56db;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
+.sprev .sval{font-size:12px;color:#1a1a1a;font-weight:500}
+.genrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 16px 8px;flex-shrink:0}
+.gbtn{border:1.5px solid #e0e0e0;background:#fff;border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .15s;width:100%}
+.gbtn:hover{background:#f0f4ff;border-color:#1a56db;transform:translateY(-1px);box-shadow:0 2px 8px rgba(26,86,219,.1)}
+.gbtn.act{border-color:#1a56db;background:#e8f0fe}
+.gbtn .ei{font-size:18px;margin-bottom:4px}
+.gbtn .et{font-size:11px;font-weight:700;color:#1a1a1a}
+.gbtn .es{font-size:10px;color:#999;margin-top:1px}
+.resetwrap{padding:0 16px 4px;text-align:center;flex-shrink:0}
+.rstbtn{background:none;border:1px solid #e0e0e0;color:#aaa;border-radius:7px;padding:5px 14px;font-size:11px;cursor:pointer}
+.rstbtn:hover{border-color:#e53e3e;color:#e53e3e}
+.footer{border-top:1px solid #e2e4ea;padding:10px 16px;text-align:center;font-size:10px;color:#bbb;line-height:1.6;background:#f7f8fa;flex-shrink:0}
+.footer strong{color:#999}
+.footer .ver{font-size:9px;opacity:.7;letter-spacing:.04em}
+.phdr{padding:14px 22px 0;border-bottom:1px solid #eee;flex-shrink:0}
+.phdr h2{font-size:13px;font-weight:700;color:#444;margin-bottom:9px}
+.ptabs{display:flex;gap:4px}
+.ptab{padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;color:#aaa;border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.ptab.act{color:#1a56db;border-bottom-color:#1a56db}
+.pbody{flex:1;overflow-y:auto;padding:18px 22px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#ccc;text-align:center;gap:12px}
+.empty .big{font-size:48px;opacity:.35}
+.empty p{font-size:13px;color:#bbb;line-height:1.6;max-width:280px}
+.ecardwrap{display:none}
+.ecardwrap.on{display:block}
+.emeta{background:#f7f8fa;border:1px solid #e2e4ea;border-radius:8px;padding:11px 14px;margin-bottom:14px}
+.emeta .esubj{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:5px}
+.emeta .emrow{font-size:12px;color:#555;margin-bottom:2px}
+.emeta .emlbl{font-weight:700;color:#999;font-size:10px;text-transform:uppercase;margin-right:5px}
+.pcardwrap{display:none}
+.pcardwrap.on{display:block}
+.pcardwrap pre{background:#f7f8fa;border:1px solid #e2e4ea;border-radius:8px;padding:14px 16px;font-size:11.5px;white-space:pre-wrap;word-break:break-word;font-family:"Courier New",monospace;line-height:1.7}
+.actbar{padding:10px 22px;border-top:1px solid #eee;display:none;flex-wrap:wrap;gap:8px;align-items:center;background:#fafafa;flex-shrink:0}
+.actbar.on{display:flex}
+.btnblue{display:inline-flex;align-items:center;gap:6px;background:#0072c6;color:#fff;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:background .12s}
+.btnblue:hover{background:#005fa3}
+.copybtn{display:inline-flex;align-items:center;gap:6px;background:#3a3a3a;color:#fff;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .12s;position:relative}
+.copybtn:hover{background:#1a1a1a}
+.copybtn.copied{background:#1e6e31}
+.ahint{font-size:10.5px;color:#aaa;flex:1;min-width:180px;line-height:1.5}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(16px);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:500;opacity:0;transition:all .22s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-<div class="container">
+<div class="shell">
 
-  <div class="hdr">
-    <span style="font-size:24px">📋</span>
+<!-- LEFT PANE -->
+<div class="pane-left">
+<div class="left-scroll">
+  <div class="app-hdr">
+    <span style="font-size:22px">📋</span>
     <h1>GCP UAT Coordinator</h1>
-    <span class="badge">v1.0</span>
   </div>
-  <p class="sub">Fill in sprint details → upload attachments → pick which email to generate. Opens pre-filled in Outlook.</p>
 
-  <!-- Sprint Info -->
+  <!-- CARD 1: Upload -->
   <div class="card">
-    <div class="lbl">🏁 Sprint info</div>
-    <input type="text" id="release" placeholder="Sprint / Release name  e.g. Sprint R1.0">
+    <div class="ctitle">📊 UAT Tracker Excel</div>
+    <p class="dsm">Upload once — auto-fills User Stories and Sign-off Counts.</p>
+    <div class="urow">
+      <div class="uzone" onclick="document.getElementById('xlinp').click()">
+        <span style="font-size:18px">📊</span>
+        <p>Upload UAT Tracker Excel</p>
+      </div>
+      <a class="tplbtn" download="GCP_UAT_Tracker_Template.xlsx" href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,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">
+        <span style="font-size:16px">📥</span>Get Template
+      </a>
+    </div>
+    <input type="file" id="xlinp" accept=".xlsx,.xls" style="display:none" onchange="readExcel(this.files[0])">
+    <div class="xlstat" id="xlstat"></div>
+  </div>
+
+  <!-- CARD 2: User Stories -->
+  <div class="card">
+    <div class="ctitle">📄 User Stories <span class="rstar">*</span></div>
+    <div class="uswrap">
+      <table class="ust">
+        <thead><tr>
+          <th style="min-width:160px">US ID &amp; Title</th>
+          <th style="min-width:95px">Business POC</th>
+          <th style="min-width:95px">Support POC</th>
+          <th style="min-width:95px">Test Data</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="ustbody"></tbody>
+      </table>
+    </div>
+    <button class="addrow" onclick="addRow()">＋ Add User Story</button>
+    <div class="emsg" id="err-us">Add at least one User Story</div>
+  </div>
+
+  <!-- CARD 3: Sprint & Recipients -->
+  <div class="card">
+    <div class="ctitle">🏁 Sprint &amp; Recipients <span class="rstar">*</span></div>
+    <div class="flbl">Sprint / Release Name <span class="req">*</span></div>
+    <input type="text" id="release" placeholder="e.g. Release 27.1" oninput="clrErr(this);updSubj()">
+    <div class="emsg" id="err-release">Required</div>
     <div class="row2">
-      <div><span class="field-lbl">UAT start date</span><input type="date" id="start"></div>
-      <div><span class="field-lbl">UAT end date</span><input type="date" id="end"></div>
+      <div>
+        <div class="flbl">Start Date <span class="req">*</span></div>
+        <input type="date" id="istart" oninput="clrErr(this)">
+        <div class="emsg" id="err-istart">Required</div>
+      </div>
+      <div>
+        <div class="flbl">End Date <span class="req">*</span></div>
+        <input type="date" id="iend" oninput="clrErr(this)">
+        <div class="emsg" id="err-iend">Required</div>
+      </div>
+    </div>
+    <div class="flbl">To <span class="req">*</span></div>
+    <input type="text" id="ito" placeholder="user@company.com; another@company.com" oninput="clrErr(this)">
+    <div class="emsg" id="err-ito">Required</div>
+    <div class="flbl">CC <span class="otag">optional</span></div>
+    <input type="text" id="icc" placeholder="qa@company.com; ba@company.com">
+    <div class="sprev" id="sprev">
+      <span class="slbl">Subject preview</span>
+      <span class="sval" id="sval"></span>
     </div>
   </div>
 
-  <!-- Recipients -->
+  <!-- CARD 4: Sprint Setup -->
   <div class="card">
-    <div class="lbl">👥 Recipients</div>
-    <span class="field-lbl">To (semicolon separated)</span>
-    <input type="text" id="to" placeholder="business.user@company.com; another@company.com">
-    <span class="field-lbl">CC (semicolon separated)</span>
-    <input type="text" id="cc" placeholder="qa@company.com; ba@company.com; dev@company.com">
-    <span class="field-lbl">Support contacts (shown in email body)</span>
-    <input type="text" id="contacts" placeholder="QA: Jane D | BA: John S | Dev Lead: Alex T">
-  </div>
-
-  <!-- Attachments -->
-  <div class="card">
-    <div class="lbl">📎 Attachments</div>
-    <p class="desc">Upload files — names appear in the email body as your attach-before-send checklist.</p>
-    <div class="upload-zone" onclick="document.getElementById('file-inp').click()">
-      <div class="icon">⬆️</div>
-      <p>Click to upload files</p>
-      <small>Requirement docs · UAT Tracker · Login Instructions · Test Data Sheet</small>
-    </div>
-    <input type="file" id="file-inp" multiple style="display:none" onchange="handleFiles(this.files)">
-    <div class="file-list" id="file-list"></div>
-    <div class="tip-info" id="file-tip">
-      ℹ️ <span>Outlook mailto links cannot auto-attach files (browser security limit). File names are listed in the email body as a reminder to attach manually before sending.</span>
-    </div>
-    <div id="file-paths" style="display:none;margin-top:8px;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;font-size:12px;color:#555">
-      <div style="font-weight:600;margin-bottom:6px;color:#333">📁 File locations — click to open folder:</div>
-      <div id="file-path-list" style="display:flex;flex-direction:column;gap:4px"></div>
-    </div>
-  </div>
-
-  <!-- User Stories -->
-  <div class="card">
-    <div class="lbl">📄 User stories / CR documents <span class="opt-tag">mandatory</span></div>
-    <p class="desc">Paste all US/CR content for this sprint — IDs, titles, requirements, acceptance criteria.</p>
-    <textarea id="us" rows="7" placeholder="ID&#9;Title&#9;Assigned To&#10;1001&#9;Non CR: User story title here...&#10;1002&#9;CR: Another user story title..."></textarea>
-  </div>
-
-  <!-- Login -->
-  <div class="card">
-    <div class="lbl">🔐 Login instructions <span class="opt-tag">optional</span></div>
-    <p class="desc">Paste if updated this sprint. Leave blank to use standard template text.</p>
-    <textarea id="login" rows="3" placeholder="URL: https://gcp-stage.company.com&#10;User ID: testuser01&#10;Steps: Open incognito, navigate to URL..."></textarea>
-  </div>
-
-  <!-- Test Data -->
-  <div class="card">
-    <div class="lbl">🧪 Test data <span class="opt-tag">optional</span></div>
-    <textarea id="td" rows="3" placeholder="User Story 1: testuser.one&#10;User Story 2: testuser.two"></textarea>
-  </div>
-
-  <!-- Recurring Defects -->
-  <div class="card">
-    <div class="lbl">🐛 Recurring defects <span class="opt-tag">auto-checked by assistant</span></div>
-    <p class="desc">Paste your <code>Recurring_Defects.md</code> from GitHub. Risks are auto-matched to this sprint's functional areas.</p>
-    <textarea id="defects" rows="5" placeholder="| Defect ID | Sprint | Functional Area | Description | Category | Status |&#10;|-----------|--------|-----------------|-------------|----------|--------|&#10;| D-001 | Sprint 1 | Module A | Brief description of defect | Functional Bug | Closed |&#10;| D-002 | Sprint 2 | Module B | Brief description of defect | Functional Bug | Open |"></textarea>
-    <div class="gh-box">
-      <span>🐙</span>
-      <span>Store <strong>Recurring_Defects.md</strong> in your GitHub repo — business views in browser, paste content here each sprint. No Excel needed.</span>
-    </div>
-  </div>
-
-  <!-- Sign-off counts -->
-  <div class="card">
-    <div class="lbl">✅ Sign-off observation counts <span class="opt-tag">for sign-off email only</span></div>
-    <p class="desc">Fill in defect counts for the observation summary table in the sign-off email.</p>
+    <div class="ctitle">⚙️ Sprint Setup <span class="otag">optional</span></div>
+    <div class="flbl">Deployment Date</div>
+    <input type="date" id="depdate">
+    <div class="flbl">Tracker URL or Path</div>
+    <input type="text" id="turl" placeholder="https://company.sharepoint.com/...">
     <div class="row2">
-      <div><span class="field-lbl">Functional bugs</span><input type="text" id="bugs" placeholder="0"></div>
-      <div><span class="field-lbl">Incorrect BR implemented</span><input type="text" id="incbr" placeholder="0"></div>
-    </div>
-    <span class="field-lbl">New business requirements</span>
-    <input type="text" id="newbr" placeholder="0">
-  </div>
-
-  <hr>
-
-  <p class="section-title">Generate email — pick one, opens pre-filled in Outlook</p>
-  <div class="email-btns">
-    <button class="ebtn" onclick="generate('pre')">
-      <div class="eicon">📤</div>
-      <div class="et">Pre-UAT / Kick-off</div>
-      <div class="es">Send before UAT starts</div>
-    </button>
-    <button class="ebtn" onclick="generate('reminder')">
-      <div class="eicon">🔔</div>
-      <div class="et">Reminder</div>
-      <div class="es">Send during UAT</div>
-    </button>
-    <button class="ebtn" onclick="generate('signoff')">
-      <div class="eicon">✅</div>
-      <div class="et">Sign-off</div>
-      <div class="es">Send after UAT ends</div>
-    </button>
-  </div>
-
-  <div class="tip-success">
-    ✅ <span>Clicking a button instantly builds the formatted email + Outlook link from your inputs. Nothing sends automatically — you review first.</span>
-  </div>
-
-  <!-- Output Area -->
-  <div class="output-area" id="output-area">
-    <div class="spinner" id="spinner" style="display:none"></div>
-    <div id="output-content" style="display:none">
-      <div class="output-tabs">
-        <button class="tab active" onclick="switchTab('preview')">📧 Email Preview</button>
-        <button class="tab" onclick="switchTab('plain')">📝 Plain Text</button>
+      <div>
+        <div class="flbl">Staging URL</div>
+        <input type="text" id="lurl" placeholder="https://gcp-stage.company.com">
       </div>
-      <div class="tab-content active" id="tab-preview"></div>
-      <div class="tab-content" id="tab-plain"></div>
-      <div id="outlook-link-area"></div>
-      <div class="checklist" id="checklist-area" style="display:none">
-        <p>⚠️ Before sending — attach these files in Outlook:</p>
-        <ul id="checklist-items"></ul>
-      </div>
-      <div class="risk-box" id="risk-box" style="display:none">
-        <strong>🚨 Defect Risk Flags</strong>
-        <div id="risk-content"></div>
+      <div>
+        <div class="flbl">User ID</div>
+        <input type="text" id="luid" placeholder="testuser01">
       </div>
     </div>
+    <div class="flbl">Password <span class="otag">test env only</span></div>
+    <input type="text" id="lpwd" placeholder="TestPass@123">
+    <div class="flbl">Notes <span class="otag">each line = one note</span></div>
+    <div class="stlist" id="stlist"></div>
+    <button class="addst" onclick="addStep()">＋ Add note</button>
   </div>
 
+  <!-- CARD 5: Sign-off Counts -->
+  <div class="card">
+    <div class="ctitle">✅ Sign-off Counts <span class="otag">sign-off email only</span></div>
+    <p class="dsm">Auto-filled from uploaded Tracker Excel. Or enter manually.</p>
+    <div class="row3">
+      <div><div class="flbl">Func. Bugs</div><input type="text" id="bugs" placeholder="0"></div>
+      <div><div class="flbl">Incorrect BR</div><input type="text" id="incbr" placeholder="0"></div>
+      <div><div class="flbl">New BR</div><input type="text" id="newbr" placeholder="0"></div>
+    </div>
+  </div>
+</div><!-- /left-scroll -->
 
+<div class="genrow">
+  <button class="gbtn" id="gb-pre" onclick="gen('pre')">
+    <div class="ei">📤</div><div class="et">Pre-UAT</div><div class="es">Kick-off</div>
+  </button>
+  <button class="gbtn" id="gb-reminder" onclick="gen('reminder')">
+    <div class="ei">🔔</div><div class="et">Reminder</div><div class="es">During UAT</div>
+  </button>
+  <button class="gbtn" id="gb-signoff" onclick="gen('signoff')">
+    <div class="ei">✅</div><div class="et">Sign-off</div><div class="es">After UAT</div>
+  </button>
 </div>
+<div class="resetwrap"><button class="rstbtn" onclick="resetAll()">↺ Reset form</button></div>
+<div class="footer">
+  ✨ Built by <strong>Swapna Pawar</strong> with AI &nbsp;·&nbsp; GCP QA Team
+  <br><span class="ver">v1.0 &nbsp;·&nbsp; Because copy-pasting emails is so last sprint.</span>
+</div>
+</div><!-- /pane-left -->
 
+<!-- RIGHT PANE -->
+<div class="pane-right">
+  <div class="phdr">
+    <h2>Email Preview</h2>
+    <div class="ptabs">
+      <button class="ptab act" data-tab="fmt" onclick="switchTab('fmt')">Formatted</button>
+      <button class="ptab" data-tab="plain" onclick="switchTab('plain')">Plain Text</button>
+    </div>
+  </div>
+  <div class="pbody">
+    <div class="empty" id="emptystate">
+      <div class="big">✉️</div>
+      <p>Fill in the form and click Pre-UAT, Reminder or Sign-off to preview your email here.</p>
+    </div>
+    <div class="ecardwrap" id="ecard">
+      <div class="emeta" id="emeta"></div>
+      <div id="ehtml"></div>
+    </div>
+    <div class="pcardwrap" id="pcard">
+      <pre id="ppre"></pre>
+    </div>
+  </div>
+  <div class="actbar" id="actbar">
+    <button class="btnblue" id="btnoutlook">📨 Open in Outlook</button>
+    <button class="copybtn" id="copybtn" onclick="doHtmlCopy()">📋 Copy for Outlook</button>
+    <span class="ahint"><strong>📨 Open in Outlook</strong> pre-fills To, CC &amp; Subject automatically — but body formatting may be limited. For perfectly formatted tables, use <strong>📋 Copy for Outlook</strong> → open a new Outlook email → Ctrl+V.</span>
+  </div>
+</div>
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-// ─── STATIC MODE — no API key needed ─────────────────────────────────────────
+// ── State ─────────────────────────────────────────────
+var usRows   = [];
+var steps    = [];
+var gHtml    = '';
+var gPlain   = '';
+var obsCount = {}; // {ustitle: count} from uploaded tracker
 
-// ─── FILE HANDLING ────────────────────────────────────────────────────────────
-let uploadedFiles = [];
+// ── DOM helper ────────────────────────────────────────
+function gid(id) { return document.getElementById(id); }
 
-function handleFiles(f) {
-  for (const x of f) { if (!uploadedFiles.find(u => u.name === x.name)) uploadedFiles.push(x); }
-  renderFiles();
-  document.getElementById('file-inp').value = '';
+// ── Escape HTML ───────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function removeFile(name) {
-  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
-  renderFiles();
+// ── Format date ───────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '';
+  var dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
 }
 
-function renderFiles() {
-  const list = document.getElementById('file-list');
+// ── Working days remaining ────────────────────────────
+function workingDaysLeft(endDateStr) {
+  if (!endDateStr) return null;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var end   = new Date(endDateStr + 'T00:00:00');
+  if (end <= today) return 0;
+  var count = 0, cur = new Date(today);
+  cur.setDate(cur.getDate() + 1);
+  while (cur <= end) {
+    var day = cur.getDay();
+    if (day !== 0 && day !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
+// ── Toast ─────────────────────────────────────────────
+function showToast(msg, dur) {
+  var t = gid('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(function() { t.classList.remove('on'); }, dur || 2500);
+}
+
+// ── Subject preview ───────────────────────────────────
+function updSubj() {
+  var r = gid('release').value.trim();
+  var box = gid('sprev');
+  if (r) { box.style.display = 'block'; gid('sval').textContent = 'UAT Commencement – ' + r; }
+  else   { box.style.display = 'none'; }
+}
+
+// ── Validation ────────────────────────────────────────
+function markErr(el, mid) {
+  el.classList.remove('ferr');
+  void el.offsetWidth;
+  el.classList.add('ferr');
+  if (mid) { var m = gid(mid); if (m) m.classList.add('on'); }
+  el.addEventListener('animationend', function() {
+    el.classList.remove('ferr');
+    el.classList.add('ferrs');
+  }, {once: true});
+}
+function clrErr(el) {
+  el.classList.remove('ferr','ferrs');
+  var m = gid('err-' + el.id);
+  if (m) m.classList.remove('on');
+}
+function validate() {
+  var ok = true;
+  var chk = [['release','err-release'],['istart','err-istart'],['iend','err-iend'],['ito','err-ito']];
+  for (var i = 0; i < chk.length; i++) {
+    var el = gid(chk[i][0]);
+    if (!el || !el.value.trim()) { if (el) markErr(el, chk[i][1]); ok = false; }
+  }
+  readRows();
+  var hasUS = false;
+  for (var j = 0; j < usRows.length; j++) { if (usRows[j].t.trim()) { hasUS = true; break; } }
+  if (!hasUS) {
+    var wrap = gid('ustbody') && gid('ustbody').closest('.uswrap');
+    if (wrap) markErr(wrap, 'err-us');
+    ok = false;
+  }
+  return ok;
+}
+
+// ── US Table ──────────────────────────────────────────
+function readRows() {
+  var nr = [];
+  for (var i = 0; i < usRows.length; i++) {
+    nr.push({
+      t: (gid('ut'+i) || {value:''}).value || '',
+      b: (gid('ub'+i) || {value:''}).value || '',
+      s: (gid('us'+i) || {value:''}).value || '',
+      d: (gid('ud'+i) || {value:''}).value || ''
+    });
+  }
+  usRows = nr;
+}
+function addRow(t,b,s,d) {
+  readRows();
+  usRows.push({t:t||'',b:b||'',s:s||'',d:d||''});
+  renderRows();
+}
+function removeRow(i) {
+  readRows();
+  usRows.splice(i,1);
+  renderRows();
+}
+function renderRows() {
+  var tb = gid('ustbody');
+  if (!tb) return;
+  tb.innerHTML = '';
+  for (var i = 0; i < usRows.length; i++) {
+    var r = usRows[i];
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><textarea id="ut'+i+'" rows="2" placeholder="2110105 CR: Title">'+esc(r.t)+'</textarea></td>'+
+      '<td><input id="ub'+i+'" type="text" value="'+esc(r.b)+'" placeholder="e.g. Ankita"></td>'+
+      '<td><input id="us'+i+'" type="text" value="'+esc(r.s)+'" placeholder="QA: Swapna"></td>'+
+      '<td><textarea id="ud'+i+'" rows="2" placeholder="jatin.nagpal / policy 100">'+esc(r.d)+'</textarea></td>'+
+      '<td><button class="rmbtn" onclick="removeRow('+i+')">×</button></td>';
+    tb.appendChild(tr);
+  }
+}
+
+// ── Steps / Notes ─────────────────────────────────────
+function addStep(v) { steps.push(v||''); renderSteps(); }
+function removeStep(i) { steps.splice(i,1); renderSteps(); }
+function renderSteps() {
+  var list = gid('stlist');
+  if (!list) return;
   list.innerHTML = '';
-  uploadedFiles.forEach(f => {
-    const ext = f.name.split('.').pop().toLowerCase();
-    const icon = ext==='pdf' ? '📕' : ['xlsx','xls','csv'].includes(ext) ? '📊' : ['doc','docx'].includes(ext) ? '📝' : '📄';
-    list.innerHTML += `<div class="file-item">
-      <div class="file-left"><span>${icon}</span> ${f.name}</div>
-      <button class="file-rm" onclick="removeFile('${f.name.replace(/'/g,"\\'")}')">×</button>
-    </div>`;
-  });
+  for (var i = 0; i < steps.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'strow';
+    d.innerHTML =
+      '<span class="stlbl">Note:</span>'+
+      '<input type="text" value="'+esc(steps[i])+'" placeholder="Note '+(i+1)+'" oninput="steps['+i+']=this.value">'+
+      '<button class="strm" onclick="removeStep('+i+')">×</button>';
+    list.appendChild(d);
+  }
+}
 
-  // Show file paths panel
-  const pathsPanel = document.getElementById('file-paths');
-  const pathList   = document.getElementById('file-path-list');
-  if (uploadedFiles.length === 0) {
-    pathsPanel.style.display = 'none';
+// ── Excel Reader ──────────────────────────────────────
+function readExcel(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type:'array'});
+      var msgs = [];
+
+      // Tab 1: User Stories
+      var ws1 = wb.Sheets['User Stories'];
+      if (ws1) {
+        var rows = XLSX.utils.sheet_to_json(ws1, {header:1, defval:''});
+        var hi = -1;
+        for (var i = 0; i < rows.length; i++) {
+          for (var j = 0; j < rows[i].length; j++) {
+            if (String(rows[i][j]).indexOf('US ID') >= 0) { hi = i; break; }
+          }
+          if (hi >= 0) break;
+        }
+        if (hi >= 0) {
+          function clean(v) { return String(v||'').replace(/^'/,'').trim(); }
+          var dr = [];
+          for (var k = hi+1; k < rows.length; k++) {
+            var id = clean(rows[k][0]);
+            if (id && /^[0-9]/.test(id)) {
+              dr.push({t: id+' '+clean(rows[k][1]), b: clean(rows[k][2]), s: clean(rows[k][4]), d: clean(rows[k][3])});
+            }
+          }
+          if (dr.length) {
+            usRows = dr; renderRows();
+            msgs.push('✅ '+dr.length+' User Stor'+(dr.length===1?'y':'ies')+' loaded.');
+          }
+        }
+      } else { msgs.push('⚠️ "User Stories" sheet not found.'); }
+
+      // Tab 2: UAT Observations — count per US ID + overall counts
+      var ws2 = wb.Sheets['UAT Observations'];
+      obsCount = {};
+      if (ws2) {
+        var obsRows = XLSX.utils.sheet_to_json(ws2, {header:1, defval:''});
+        var ohi = -1;
+        for (var oi = 0; oi < obsRows.length; oi++) {
+          for (var oj = 0; oj < obsRows[oi].length; oj++) {
+            if (String(obsRows[oi][oj]).indexOf('US ID') >= 0) { ohi = oi; break; }
+          }
+          if (ohi >= 0) break;
+        }
+        var bugs = 0, incbr = 0, newbr = 0;
+        if (ohi >= 0) {
+          for (var ok2 = ohi+1; ok2 < obsRows.length; ok2++) {
+            var row = obsRows[ok2];
+            var usid = String(row[0]||'').replace(/^'/,'').trim();
+            var cat  = String(row[3]||'').trim();
+            if (!usid) continue;
+            if (!obsCount[usid]) obsCount[usid] = 0;
+            if (cat) { obsCount[usid]++; }
+            if (cat === 'Functional Bug') bugs++;
+            else if (cat === 'Incorrect Business Requirement Implemented') incbr++;
+            else if (cat === 'New Business Requirement') newbr++;
+          }
+        }
+        if (bugs+incbr+newbr > 0) {
+          gid('bugs').value=bugs; gid('incbr').value=incbr; gid('newbr').value=newbr;
+          ['bugs','incbr','newbr'].forEach(function(id){gid(id).classList.add('af');});
+          msgs.push('✅ Counts — Bugs: '+bugs+' | Incorrect BR: '+incbr+' | New BR: '+newbr);
+        } else {
+          msgs.push('ℹ️ No categorised observations yet in UAT Observations sheet.');
+        }
+      } else { msgs.push('⚠️ "UAT Observations" sheet not found.'); }
+
+      var st = gid('xlstat');
+      st.className = 'xlstat ok';
+      st.innerHTML = msgs.join('<br>');
+    } catch(err) {
+      gid('xlstat').className = 'xlstat er';
+      gid('xlstat').textContent = 'Error reading file: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  gid('xlinp').value = '';
+}
+
+// ── Tab switching ─────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.ptab').forEach(function(t) { t.classList.remove('act'); });
+  document.querySelectorAll('.ptab').forEach(function(t) {
+    if (t.getAttribute('data-tab') === tab) t.classList.add('act');
+  });
+  var hasContent = gid('emptystate').style.display === 'none';
+  if (hasContent) {
+    gid('ecard').classList.toggle('on', tab === 'fmt');
+    gid('pcard').classList.toggle('on', tab === 'plain');
+  }
+}
+
+// ── Copy for Outlook — with tick animation ────────────
+function doHtmlCopy() {
+  if (!gHtml) { showToast('Generate an email first.'); return; }
+  var btn = gid('copybtn');
+  function onSuccess() {
+    btn.innerHTML = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.innerHTML = '📋 Copy for Outlook';
+      btn.classList.remove('copied');
+    }, 2000);
+  }
+  function onFail() {
+    var w = window.open('','_blank');
+    w.document.write(gHtml); w.document.close();
+    showToast('Opened in new tab — select all, copy, paste into Outlook.', 4000);
+  }
+  try {
+    var blob = new Blob([gHtml], {type:'text/html'});
+    var item = new ClipboardItem({'text/html': blob});
+    navigator.clipboard.write([item]).then(onSuccess).catch(onFail);
+  } catch(e) { onFail(); }
+}
+
+// ── Mailto ────────────────────────────────────────────
+function buildMailto(to, cc, subj, body) {
+  var url = 'mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  if (cc && cc.trim()) url += '&cc='+encodeURIComponent(cc.trim());
+  return url;
+}
+
+// ── Email builders ────────────────────────────────────
+var TH  = 'border:1px solid #cccccc;padding:8px 10px;background-color:#dce6f7;text-align:left;font-weight:bold;color:#1a1a1a;font-family:Arial,sans-serif;font-size:13px';
+var TD0 = 'border:1px solid #cccccc;padding:8px 10px;vertical-align:top;color:#1a1a1a;background-color:#ffffff;font-family:Arial,sans-serif;font-size:13px';
+var TD1 = 'border:1px solid #cccccc;padding:8px 10px;vertical-align:top;color:#1a1a1a;background-color:#f7f9ff;font-family:Arial,sans-serif;font-size:13px';
+var PS  = 'font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;margin:4px 0;line-height:1.6';
+var HS  = 'font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#1a1a1a;margin:14px 0 5px;border-bottom:1px solid #e5e5e5;padding-bottom:3px';
+var BS  = 'font-family:Arial,sans-serif;font-size:13px;background:#fff8e6;border-left:3px solid #f0a500;padding:10px 14px;margin:10px 0;color:#1a1a1a;line-height:1.7';
+var AS  = 'font-family:Arial,sans-serif;font-size:13px;background:#e8f0fe;border-left:3px solid #1a56db;padding:10px 14px;margin:10px 0;color:#1a1a1a;line-height:1.7';
+
+function htable(hdrs, rows) {
+  var t = '<table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:13px;margin:8px 0"><tr>';
+  for (var h = 0; h < hdrs.length; h++) t += '<th style="'+TH+'">'+hdrs[h]+'</th>';
+  t += '</tr>';
+  for (var r = 0; r < rows.length; r++) {
+    var td = r%2===0 ? TD0 : TD1;
+    t += '<tr>';
+    for (var c = 0; c < rows[r].length; c++) t += '<td style="'+td+'">'+(rows[r][c]||'')+'</td>';
+    t += '</tr>';
+  }
+  return t + '</table>';
+}
+function ptable(hdrs, rows) {
+  var w = [];
+  for (var h = 0; h < hdrs.length; h++) {
+    var mx = hdrs[h].length;
+    for (var r = 0; r < rows.length; r++) { var l = String(rows[r][h]||'').length; if (l>mx) mx=l; }
+    w.push(Math.max(mx,4));
+  }
+  function pad(s,n) { s=String(s||''); while(s.length<n) s+=' '; return s; }
+  var sep='|'; for(var i=0;i<w.length;i++) sep+='-'.repeat(w[i]+2)+'+'; sep=sep.slice(0,-1)+'|';
+  var t='| '; for(var j=0;j<hdrs.length;j++) t+=pad(hdrs[j],w[j])+' | '; t=t.slice(0,-2)+' |\n'+sep+'\n';
+  for(var r2=0;r2<rows.length;r2++){t+='| ';for(var c2=0;c2<rows[r2].length;c2++) t+=pad(rows[r2][c2],w[c2])+' | ';t=t.slice(0,-2)+' |\n';}
+  return t;
+}
+function Hp(txt) { return '<p style="'+PS+'">'+txt+'</p>'; }
+function Hh(txt) { return '<p style="'+HS+'">'+txt+'</p>'; }
+function Hbox(txt,style) { return '<div style="'+(style||BS)+'">'+txt+'</div>'; }
+function Psec(t) { return '\n'+t+'\n'+'='.repeat(t.length)+'\n'; }
+
+// ── GENERATE ──────────────────────────────────────────
+function gen(type) {
+  if (!validate()) {
+    var pl = document.querySelector('.pane-left');
+    if (pl) pl.scrollTo({top:0,behavior:'smooth'});
     return;
   }
-  pathsPanel.style.display = 'block';
-  pathList.innerHTML = uploadedFiles.map(f => {
-    const path = f.path || (f.webkitRelativePath ? f.webkitRelativePath : f.name);
-    const folderPath = path.includes('/') || path.includes('\\')
-      ? path.substring(0, Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')))
-      : '';
-    return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #eee">
-      <span style="flex-shrink:0">📄</span>
-      <span style="flex:1;word-break:break-all;font-family:'Courier New',monospace;font-size:11px">${path || f.name}</span>
-      ${folderPath ? `<a href="file:///${folderPath.replace(/\\/g,'/')}" title="Open folder" style="flex-shrink:0;color:#1a56db;text-decoration:none;font-size:11px" target="_blank">📂 Open</a>` : ''}
-    </div>`;
-  }).join('');
-}
+  readRows();
+  var rows = [];
+  for (var i=0;i<usRows.length;i++) { if (usRows[i].t.trim()) rows.push(usRows[i]); }
 
-// ─── DATE FORMAT ─────────────────────────────────────────────────────────────
-function fmt(d) {
-  if (!d) return '[DD-MMM-YYYY]';
-  const dt = new Date(d + 'T00:00:00');
-  return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
-}
+  var release = gid('release').value.trim();
+  var start   = fmtDate(gid('istart').value);
+  var end     = fmtDate(gid('iend').value);
+  var endRaw  = gid('iend').value;
+  var depRaw  = gid('depdate').value;
+  var dep     = fmtDate(depRaw);
+  var to      = gid('ito').value.trim();
+  var cc      = gid('icc').value.trim();
+  var tUrl    = gid('turl').value.trim();
+  var lUrl    = gid('lurl').value.trim();
+  var lUid    = gid('luid').value.trim();
+  var lPwd    = gid('lpwd').value.trim();
+  var bugs    = gid('bugs').value.trim();
+  var incbr   = gid('incbr').value.trim();
+  var newbr   = gid('newbr').value.trim();
+  var stepsF  = steps.filter(function(s){return s;});
+  var daysLeft = workingDaysLeft(endRaw);
 
-// ─── TAB SWITCH ──────────────────────────────────────────────────────────────
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
-}
-
-// ─── GENERATE ────────────────────────────────────────────────────────────────
-function generate(type) {
-  const release   = document.getElementById('release').value.trim()  || '[Sprint / Release]';
-  const start     = fmt(document.getElementById('start').value);
-  const end       = fmt(document.getElementById('end').value);
-  const to        = document.getElementById('to').value.trim();
-  const cc        = document.getElementById('cc').value.trim();
-  const contacts  = document.getElementById('contacts').value.trim();
-  const us        = document.getElementById('us').value.trim();
-  const login     = document.getElementById('login').value.trim();
-  const td        = document.getElementById('td').value.trim();
-  const bugs      = document.getElementById('bugs').value.trim()  || '0';
-  const incbr     = document.getElementById('incbr').value.trim() || '0';
-  const newbr     = document.getElementById('newbr').value.trim() || '0';
-  const fileNames = uploadedFiles.map(f => f.name);
-
-  if (!us) { alert('Please paste at least the User Story / CR documents to continue.'); return; }
-
-  // Parse US lines into rows
-  const usLines = us.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('ID') && !l.startsWith('---'));
-  const usRows = usLines.map(line => {
-    const parts = line.split(/\t|  {2,}/);
-    const id    = parts[0] ? parts[0].trim() : '';
-    const title = parts[1] ? parts[1].trim() : line.trim();
-    return { id, title };
+  // Active button
+  ['pre','reminder','signoff'].forEach(function(t) {
+    var b=gid('gb-'+t); if(b) b.classList.toggle('act',t===type);
   });
 
-  const usTableHtml = `<table style="border-collapse:collapse;width:100%;font-size:13px;margin:8px 0">
-    <tr style="background:#e8f0fe"><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:left">User Story ID</th><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:left">User Story Name</th></tr>
-    ${usRows.map(r => `<tr><td style="border:1px solid #e5e5e5;padding:6px 10px">${r.id}</td><td style="border:1px solid #e5e5e5;padding:6px 10px">${r.title}</td></tr>`).join('')}
-  </table>`;
+  // Subject
+  var subjMap = {
+    pre:      'UAT Commencement \u2013 '+release,
+    reminder: '\u26A0\uFE0F UAT Closing Soon \u2013 Action Required \u2013 '+release,
+    signoff:  '\u23F3 Reverse Sign-off Required \u2013 '+release
+  };
+  var subj = subjMap[type];
 
-  const usListHtml = usRows.map(r => `<li>${r.id ? r.id + ' — ' : ''}${r.title}</li>`).join('');
-  const usPlain    = usRows.map(r => `  • ${r.id ? r.id + ' — ' : ''}${r.title}`).join('\n');
+  // US table rows
+  var usHtml=[], usPlain=[];
+  for (var r=0;r<rows.length;r++) {
+    usHtml.push([esc(rows[r].t),esc(rows[r].b),esc(rows[r].s),esc(rows[r].d)]);
+    usPlain.push([rows[r].t,rows[r].b,rows[r].s,rows[r].d]);
+  }
 
-  const filesHtml  = fileNames.length
-    ? '<ul>' + fileNames.map(n => `<li>${n}</li>`).join('') + '</ul>'
-    : '<ul><li>UAT Tracker</li><li>Login Instructions</li><li>Test Data Sheet</li></ul>';
-  const filesPlain = fileNames.length
-    ? fileNames.map(n => `  • ${n}`).join('\n')
-    : '  • UAT Tracker\n  • Login Instructions\n  • Test Data Sheet';
+  // Observation count table per US (for reminder)
+  var obsHtml=[], obsPlain=[];
+  for (var or=0;or<rows.length;or++) {
+    var usid = rows[or].t.split(' ')[0];
+    var cnt  = obsCount[usid] !== undefined ? String(obsCount[usid]) : '—';
+    obsHtml.push([esc(rows[or].t), cnt]);
+    obsPlain.push([rows[or].t, cnt]);
+  }
 
-  const loginHtml  = login ? login.replace(/\n/g,'<br>') : 'Please use the latest Stage environment login details shared for UAT validation.';
-  const loginPlain = login || 'Please use the latest Stage environment login details shared for UAT validation.';
-  const tdHtml     = td ? td.replace(/\n/g,'<br>') : 'Please use only the designated UAT test data shared by the testing team.';
-  const tdPlain    = td || 'Please use only the designated UAT test data shared by the testing team.';
-  const contactsHtml  = contacts ? contacts.replace(/\|/g,'<br>') : '[Support contacts not provided]';
-  const contactsPlain = contacts ? contacts.replace(/\|/g,'\n') : '[Support contacts not provided]';
-  const usCount = usRows.length;
+  // Tracker block
+  var isUrl = /^https?:\/\//i.test(tUrl);
+  var trackerLink = tUrl
+    ? (isUrl ? '<a href="'+tUrl+'" style="color:#1a56db">UAT Tracker</a>' : 'UAT Tracker ('+esc(tUrl)+')')
+    : 'UAT Tracker';
+  var trackerP = tUrl ? 'UAT Tracker: '+tUrl : 'UAT Tracker';
 
-  let subject, previewHtml, plainText;
+  // Login block
+  var hasLogin = lUrl||lUid||lPwd||stepsF.length;
+  var loginH='', loginP='';
+  if (hasLogin) {
+    if(lUrl) loginH+='<p style="'+PS+'"><strong>Staging URL:</strong> <a href="'+lUrl+'" style="color:#1a56db">'+lUrl+'</a></p>';
+    if(lUid) loginH+='<p style="'+PS+'"><strong>User ID:</strong> '+esc(lUid)+'</p>';
+    if(lPwd) loginH+='<p style="'+PS+'"><strong>Password:</strong> '+esc(lPwd)+'</p>';
+    if(stepsF.length){
+      loginH+='<p style="'+PS+'"><strong>Notes:</strong></p><ul style="margin:4px 0 0 18px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a">';
+      for(var si=0;si<stepsF.length;si++) loginH+='<li style="margin-bottom:3px">'+esc(stepsF[si])+'</li>';
+      loginH+='</ul>';
+    }
+    if(lUrl) loginP+='Staging URL: '+lUrl+'\n';
+    if(lUid) loginP+='User ID: '+lUid+'\n';
+    if(lPwd) loginP+='Password: '+lPwd+'\n';
+    for(var ni=0;ni<stepsF.length;ni++) loginP+='Note: '+stepsF[ni]+'\n';
+  }
+
+  // Counts
+  var hasCount = bugs||incbr||newbr;
+  var countH = hasCount
+    ? htable(['Category','Count'],[['Functional Bugs',bugs||'0'],['Incorrect Business Requirement Implemented',incbr||'0'],['New Business Requirement',newbr||'0']])
+    : '<p style="'+PS+'">Refer to the '+trackerLink+' for observation details.</p>';
+  var countP = hasCount
+    ? ptable(['Category','Count'],[['Functional Bugs',bugs||'0'],['Incorrect Business Requirement Implemented',incbr||'0'],['New Business Requirement',newbr||'0']])
+    : 'Refer to the UAT Tracker for observation details.';
+
+  // ══ BUILD HTML ══
+  var html = '<div style="font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;max-width:700px">';
+  html += Hp('Hi Team,');
 
   if (type === 'pre') {
-    subject = `UAT Commencement – ${release} – ${usCount} User Stor${usCount===1?'y':'ies'}`;
-    previewHtml = `
-      <p>Hi Team,</p><br>
-      <p>UAT is scheduled to commence for the below User Stories.</p><br>
-      <p><strong>UAT Timeline</strong></p>
-      <p>Start Date: <strong>${start}</strong><br>End Date: <strong>${end}</strong> (Maximum 5 working days)</p><br>
-      <p><strong>User Stories in Scope</strong></p>
-      ${usTableHtml}
-      <p><strong>Attached Documents</strong></p>
-      <p>Please refer to the attached documents for UAT validation:</p>
-      ${filesHtml}
-      <p><strong>GCP Stage Login Instructions</strong></p>
-      <p>${loginHtml}</p><br>
-      <p><strong>Test Data</strong></p>
-      <p>${tdHtml}</p><br>
-      <p><strong>Observation Tracker</strong></p>
-      <p>Please log all observations in the UAT Tracker. Observations will be classified as:</p>
-      <ul><li>Functional Bug</li><li>Incorrect Business Requirement Implemented</li><li>New Business Requirement</li></ul>
-      <p><strong>Support Contacts</strong></p>
-      <p>For any questions or issues during UAT:</p>
-      <p>${contactsHtml}</p><br>
-      <p>Kindly complete your validation within the UAT timeline and provide your observations in the tracker.</p><br>
-      <p>Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p>`;
-    plainText = `Hi Team,\n\nUAT is scheduled to commence for the below User Stories.\n\nUAT Timeline\nStart Date: ${start}\nEnd Date: ${end} (Maximum 5 working days)\n\nUser Stories in Scope\n${usPlain}\n\nAttached Documents\nPlease refer to the attached documents for UAT validation:\n${filesPlain}\n\nGCP Stage Login Instructions\n${loginPlain}\n\nTest Data\n${tdPlain}\n\nObservation Tracker\nPlease log all observations in the UAT Tracker. Observations will be classified as:\n  • Functional Bug\n  • Incorrect Business Requirement Implemented\n  • New Business Requirement\n\nSupport Contacts\nFor any questions or issues during UAT:\n${contactsPlain}\n\nKindly complete your validation within the UAT timeline and provide your observations in the tracker.\n\nThanks & Regards,\nGCP QA Team`;
+    html += Hp('UAT for <strong>'+esc(release)+'</strong> is now open for testing.');
+    html += Hh('UAT Timeline');
+    html += Hp('<strong>Start Date:</strong> '+start);
+    html += Hp('<strong>End Date:</strong> '+end+' (5 working days)');
+    html += Hh('User Stories in Scope');
+    if (dep) html += '<div style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#7a4f00;background:#fff8e6;border-left:3px solid #f0a500;padding:8px 14px;margin:10px 0">🚀 Planned Deployment: '+dep+'</div>';
+    html += htable(['US ID &amp; Title','Business POC','Support POC','Test Data'],usHtml);
+    if (hasLogin) { html += Hh('Login Instructions'); html += loginH; }
+    html += Hh('How to Log Observations');
+    html += Hp('Please log any findings in the '+trackerLink+'. Our team will review and classify each observation.');
+    html += Hp('For queries, contact the Support POC listed in the table above.');
+    html += Hp('Kindly complete your UAT by <strong>'+end+'</strong>.');
 
   } else if (type === 'reminder') {
-    subject = `Reminder: UAT in Progress – ${release}`;
-    previewHtml = `
-      <p>Hi Team,</p><br>
-      <p>A gentle reminder that UAT is currently in progress for the below User Stories:</p>
-      <ul>${usListHtml}</ul>
-      <p>UAT End Date: <strong>${end}</strong></p><br>
-      <p>If you identify any observations, please log them in the UAT Tracker at the earliest to enable timely review and resolution.</p>
-      <p>If no issues are found, kindly update the tracker and confirm completion of your validation.</p><br>
-      <p>Please reach out to the QA team if any assistance is required.</p><br>
-      <p>Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p>`;
-    plainText = `Hi Team,\n\nA gentle reminder that UAT is currently in progress for the below User Stories:\n\n${usPlain}\n\nUAT End Date: ${end}\n\nIf you identify any observations, please log them in the UAT Tracker at the earliest to enable timely review and resolution.\nIf no issues are found, kindly update the tracker and confirm completion of your validation.\n\nPlease reach out to the QA team if any assistance is required.\n\nThanks & Regards,\nGCP QA Team`;
+    var urgencyLine = daysLeft !== null
+      ? (daysLeft === 0 ? 'UAT for <strong>'+esc(release)+'</strong> closes <strong>today</strong>. Immediate action required.'
+        : 'UAT for <strong>'+esc(release)+'</strong> is closing on <strong>'+end+'</strong>. <strong>'+daysLeft+' working day'+(daysLeft===1?'':'s')+' remaining.</strong>')
+      : 'UAT for <strong>'+esc(release)+'</strong> is closing on <strong>'+end+'</strong>.';
+    html += Hbox(urgencyLine, AS);
+    html += Hp('Please complete your UAT and log any findings in the '+trackerLink+' before the deadline.');
+    html += Hh('Observation Status');
+    if (dep) html += '<div style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#7a4f00;background:#fff8e6;border-left:3px solid #f0a500;padding:8px 14px;margin:10px 0">🚀 Planned Deployment: '+dep+'</div>';
+    html += htable(['US ID &amp; Title','Observations Logged'],obsHtml);
+    html += Hbox(
+      '<strong>Action Required:</strong> Once your UAT is complete, please reply to this email with:<br>'+
+      '&nbsp;&nbsp;&nbsp;✅ <em>"UAT completed \u2013 no observations"</em><br>'+
+      '&nbsp;&nbsp;&nbsp;📝 <em>"UAT completed \u2013 [X] observations logged"</em>',
+      AS
+    );
+    html += Hp('For any assistance, reach out to your Support POC.');
 
   } else {
-    subject = `UAT Completion & Sign-off Request – ${release}`;
-    const obsTableHtml = `<table style="border-collapse:collapse;width:100%;font-size:13px;margin:8px 0">
-      <tr style="background:#e8f0fe"><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:left">Category</th><th style="border:1px solid #c3d3fd;padding:6px 10px;text-align:center">Count</th></tr>
-      <tr><td style="border:1px solid #e5e5e5;padding:6px 10px">Functional Bugs</td><td style="border:1px solid #e5e5e5;padding:6px 10px;text-align:center">${bugs}</td></tr>
-      <tr><td style="border:1px solid #e5e5e5;padding:6px 10px">Incorrect Business Requirement Implemented</td><td style="border:1px solid #e5e5e5;padding:6px 10px;text-align:center">${incbr}</td></tr>
-      <tr><td style="border:1px solid #e5e5e5;padding:6px 10px">New Business Requirement</td><td style="border:1px solid #e5e5e5;padding:6px 10px;text-align:center">${newbr}</td></tr>
-    </table>`;
-    previewHtml = `
-      <p>Hi Team,</p><br>
-      <p>UAT activities for the below User Stories have been completed:</p>
-      <ul>${usListHtml}</ul>
-      <p><strong>Observation Summary</strong></p>
-      ${obsTableHtml}
-      <p>Kindly review the tracker and provide your UAT sign-off confirmation by replying to this email.</p><br>
-      <p>If no further observations exist, we will consider UAT completed and proceed with the planned release activities.</p>
-      <p>Thanks for your participation and support.</p><br>
-      <p>Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p>`;
-    plainText = `Hi Team,\n\nUAT activities for the below User Stories have been completed:\n\n${usPlain}\n\nObservation Summary\nFunctional Bugs: ${bugs}\nIncorrect Business Requirement Implemented: ${incbr}\nNew Business Requirement: ${newbr}\n\nKindly review the tracker and provide your UAT sign-off confirmation by replying to this email.\n\nIf no further observations exist, we will consider UAT completed and proceed with the planned release activities.\nThanks for your participation and support.\n\nThanks & Regards,\nGCP QA Team`;
+    html += Hp('The UAT period for <strong>'+esc(release)+'</strong> has ended. Your sign-off is required before we proceed with the planned deployment.');
+    html += Hh('User Stories in Scope');
+    if (dep) html += '<div style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#7a4f00;background:#fff8e6;border-left:3px solid #f0a500;padding:8px 14px;margin:10px 0">🚀 Planned Deployment: '+dep+'</div>';
+    html += htable(['US ID &amp; Title','Business POC','Support POC','Test Data'],usHtml);
+    html += Hh('Observation Summary');
+    html += countH;
+    html += Hbox(
+      '<strong>Action Required \u2014 please reply to this email with one of the following:</strong><br><br>'+
+      '&nbsp;&nbsp;&nbsp;✅ <em>"Sign-off confirmed \u2013 no further observations"</em><br>'+
+      '&nbsp;&nbsp;&nbsp;❌ <em>"Sign-off withheld \u2013 observations pending: [describe]"</em>',
+      AS
+    );
+    html += Hp('If we do not receive a response by <strong>'+end+'</strong>, we will consider this as <strong>reverse sign-off</strong> and proceed with the planned deployment.');
   }
 
-  // Show output
-  const outputArea = document.getElementById('output-area');
-  outputArea.classList.add('visible');
-  document.getElementById('spinner').classList.remove('visible');
-  document.getElementById('output-content').style.display = 'block';
+  html += '<p style="'+PS+';margin-top:14px">Thanks &amp; Regards,<br><strong>GCP QA Team</strong></p></div>';
 
-  document.getElementById('tab-preview').innerHTML = `
-    <div style="background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:1rem;margin-bottom:1rem">
-      <span style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase">Subject</span>
-      <p style="font-size:14px;font-weight:600;color:#1a1a1a;margin-top:4px">${subject}</p>
-    </div>
-    <div style="line-height:1.9;font-size:13px">${previewHtml}</div>`;
+  // ══ BUILD PLAIN ══
+  var plain = 'Hi Team,\n';
 
-  document.getElementById('tab-plain').innerHTML = `<pre>${plainText}</pre>`;
-
-  const toEnc   = encodeURIComponent(to);
-  const ccEnc   = encodeURIComponent(cc);
-  const subEnc  = encodeURIComponent(subject);
-  const bodyEnc = encodeURIComponent(plainText);
-  document.getElementById('outlook-link-area').innerHTML =
-    `<a class="outlook-btn" href="mailto:${toEnc}?cc=${ccEnc}&subject=${subEnc}&body=${bodyEnc}">📨 Open in Outlook</a>`;
-
-  if (fileNames.length) {
-    document.getElementById('checklist-area').style.display = 'block';
-    document.getElementById('checklist-items').innerHTML =
-      fileNames.map(n => `<li><input type="checkbox"> Attach <strong>${n}</strong> in Outlook</li>`).join('');
+  if (type === 'pre') {
+    plain += 'UAT for '+release+' is now open for testing.\n';
+    plain += Psec('UAT TIMELINE');
+    plain += 'Start Date         : '+start+'\n';
+    plain += 'End Date           : '+end+' (5 working days)\n';
+    plain += Psec('USER STORIES IN SCOPE');
+    if (dep) plain += '>> Planned Deployment: '+dep+'\n';
+    plain += ptable(['US ID & Title','Business POC','Support POC','Test Data'],usPlain);
+    if (hasLogin) { plain += Psec('LOGIN INSTRUCTIONS'); plain += loginP; }
+    plain += Psec('HOW TO LOG OBSERVATIONS');
+    plain += 'Please log any findings in the '+trackerP+'.\n';
+    plain += 'Our team will review and classify each observation.\n';
+    plain += 'For queries, contact the Support POC listed in the table above.\n';
+    plain += '\nKindly complete your UAT by '+end+'.\n';
+  } else if (type === 'reminder') {
+    var dl = daysLeft !== null
+      ? (daysLeft===0 ? 'UAT closes TODAY. Immediate action required.'
+        : 'UAT closing on '+end+'. '+daysLeft+' working day'+(daysLeft===1?'':'s')+' remaining.')
+      : 'UAT closing on '+end+'.';
+    plain += '\n*** '+dl+' ***\n';
+    plain += '\nPlease complete your UAT and log any findings in the '+trackerP+' before the deadline.\n';
+    plain += Psec('OBSERVATION STATUS');
+    if (dep) plain += '>> Planned Deployment: '+dep+'\n';
+    plain += ptable(['US ID & Title','Observations Logged'],obsPlain);
+    plain += '\nACTION REQUIRED\n';
+    plain += 'Once your UAT is complete, please reply with:\n';
+    plain += '  * "UAT completed - no observations"\n';
+    plain += '  * "UAT completed - [X] observations logged"\n';
+    plain += '\nFor any assistance, reach out to your Support POC.\n';
+  } else {
+    plain += 'The UAT period for '+release+' has ended.\n';
+    plain += 'Your sign-off is required before we proceed with the planned deployment.\n';
+    plain += Psec('USER STORIES IN SCOPE');
+    if (dep) plain += '>> Planned Deployment: '+dep+'\n';
+    plain += ptable(['US ID & Title','Business POC','Support POC','Test Data'],usPlain);
+    plain += Psec('OBSERVATION SUMMARY');
+    plain += countP+'\n';
+    plain += '\nACTION REQUIRED - please reply with one of the following:\n';
+    plain += '  * "Sign-off confirmed - no further observations"\n';
+    plain += '  * "Sign-off withheld - observations pending: [describe]"\n';
+    plain += '\nIf we do not receive a response by '+end+', we will consider this as reverse sign-off and proceed with the planned deployment.\n';
   }
+  plain += '\nThanks & Regards,\nGCP QA Team';
+
+  gHtml = html; gPlain = plain;
+
+  // Render right pane
+  gid('emptystate').style.display = 'none';
+  gid('emeta').innerHTML =
+    '<div class="esubj">'+esc(subj)+'</div>'+
+    '<div class="emrow"><span class="emlbl">To</span>'+esc(to)+'</div>'+
+    (cc?'<div class="emrow"><span class="emlbl">CC</span>'+esc(cc)+'</div>':'');
+  gid('ehtml').innerHTML = html;
+  gid('ppre').textContent = plain;
+  gid('ecard').classList.add('on');
+  gid('pcard').classList.remove('on');
+  document.querySelectorAll('.ptab').forEach(function(t){t.classList.remove('act');});
+  document.querySelectorAll('.ptab').forEach(function(t){if(t.getAttribute('data-tab')==='fmt')t.classList.add('act');});
+  gid('actbar').classList.add('on');
+  gid('btnoutlook').onclick = function(){window.location.href=buildMailto(to,cc,subj,plain);};
 }
+
+// ── Reset ─────────────────────────────────────────────
+function resetAll() {
+  if (!confirm('Reset all form fields?')) return;
+
+  // Step 1: clear state arrays first
+  usRows=[]; steps=[]; obsCount={}; gHtml=''; gPlain='';
+
+  // Step 2: wipe dynamic table & steps list (renders empty)
+  renderRows(); renderSteps();
+
+  // Step 3: clear all static text/date inputs by explicit ID
+  var staticIds = ['release','istart','iend','ito','icc','depdate','turl','lurl','luid','lpwd','bugs','incbr','newbr'];
+  for (var i=0; i<staticIds.length; i++) {
+    var el = gid(staticIds[i]);
+    if (el) el.value = '';
+  }
+
+  // Step 4: reset UI states
+  var sp = gid('sprev'); if (sp) sp.style.display = 'none';
+  var xs = gid('xlstat'); if (xs) { xs.className = 'xlstat'; xs.innerHTML = ''; }
+  gid('emptystate').style.display = 'flex';
+  gid('ecard').classList.remove('on');
+  gid('pcard').classList.remove('on');
+  gid('ehtml').innerHTML = '';
+  gid('ppre').textContent = '';
+  gid('emeta').innerHTML = '';
+  gid('actbar').classList.remove('on');
+
+  // Step 5: remove highlights and error states
+  ['bugs','incbr','newbr'].forEach(function(id){ var el=gid(id); if(el) el.classList.remove('af'); });
+  document.querySelectorAll('.gbtn').forEach(function(b){ b.classList.remove('act'); });
+  document.querySelectorAll('.ferrs').forEach(function(el){ el.classList.remove('ferrs'); });
+  document.querySelectorAll('.emsg').forEach(function(el){ el.classList.remove('on'); });
+
+  // Step 6: reset copy button if it was in copied state
+  var cb = gid('copybtn');
+  if (cb) { cb.innerHTML = '📋 Copy for Outlook'; cb.classList.remove('copied'); }
+
+  // Step 7: reset tab to Formatted
+  document.querySelectorAll('.ptab').forEach(function(t){ t.classList.remove('act'); });
+  document.querySelectorAll('.ptab').forEach(function(t){
+    if (t.getAttribute('data-tab') === 'fmt') t.classList.add('act');
+  });
+
+  showToast('Form reset ✓');
+  addRow(); // start with one clean empty row
+}
+
+// Init
+addRow();
 </script>
 </body>
 </html>
